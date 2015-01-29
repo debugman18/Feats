@@ -13,12 +13,6 @@ local loaded_feats = nil
 
 ----------------------------------------------------------------------------
 
-local feats_collection = {
-    
-}
-
-----------------------------------------------------------------------------
-
 -- Opens the feats screen.
 local function FeatsOpen()
     -- Lets not do this until the screen is done.
@@ -48,14 +42,14 @@ local function patch_feats(self)
 
     -- Load our dirty variable.
     self.Set = function(self, str, callback)
-        print("DEBUGSTRING" .. str)
+        print("DEBUGSTRING: " .. str)
 
         -- Store our dirty variable elsewhere.
         data = GLOBAL.json.decode(str)
         local feats = data["feats"]
         for k,v in pairs(feats) do
-            for name,string in pairs(v) do
-                if name == name then
+            for n,string in pairs(v) do
+                if n == name then
                     print("DEBUGDATA: " .. string)
                 end
             end
@@ -63,23 +57,28 @@ local function patch_feats(self)
         self.persistdata.feats = data["feats"]
 
         self:old_Set(str, callback)
-    end
+    end   
 
     -- Avoid redundancy and errors.
-    print("Checking for persistdata.")
-    if self.persistdata then
-        if not loaded_feats then
-            print("Feats will now persist.")
-            self.persistdata.feats = {debug = {"debug_name", "debug_description"}}
-            self.dirty = true
-            self:Save()
-        else
-            print("Feats already persist.")
-        end
-    end    
+    function CreateFeats()
+        print("Checking for persistdata.")
+        if self.persistdata then
+            if not loaded_feats then
+                print("Feats will now persist.")
+                self.persistdata.feats = {debug = {"debug_name", "debug_description"}}
+                self.dirty = true
+                self:Save()
+            else
+                print("Feats already persist.")
+            end
+        end 
+    end
 
     -- Add a feat to the achievement list.
-    function self:AddFeat(name, description, locked, hidden)
+    function AddFeat(name, description, locked, hidden)
+        print("Attempting to add feat.")
+        print(name)
+        print(description)
         -- Add values straight to this temp table.
         local temp_key = {
             name = name, 
@@ -94,10 +93,8 @@ local function patch_feats(self)
                 if self.persistdata.feats then
                     print("Added " .. name .. " to feats list.")
                     table.insert(self.persistdata.feats, temp_key)
-                    --self.persistdata.feats[key].name = name
-                    --self.persistdata.feats[key].description = description
-                    --self.persistdata.feats[key].locked = locked or nil
-                    --self.persistdata.feats[key].hidden = hidden or nil                     
+                    self.dirty = true
+                    self:Save()                    
                 end
             else
                 -- The key already exists.
@@ -117,8 +114,11 @@ local function patch_feats(self)
         end
     end
 
+    -- Initialize the feats table.
+    CreateFeats()
+
     -- This is a sample feat for testing.
-    self.AddFeat("Sample Feat", "Sample Feat Description")
+    AddFeat("Sample Feat", "Sample Feat Description")
 end
 
 AddGlobalClassPostConstruct("playerprofile", "PlayerProfile", patch_feats)
