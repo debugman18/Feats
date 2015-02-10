@@ -1,5 +1,9 @@
+GLOBAL.setmetatable(env, {__index=GLOBAL})
+
+--[[ do without
 -- For convenience purposes.
 local require = GLOBAL.require
+--]]
 
 require "prefabutil"
 
@@ -27,7 +31,7 @@ local function append_feats(self)
     local feats_meta = {{ text = "Feats", cb = function() FeatsOpen() end }}
     self.featsbutton = self.bmenu:AddChild(Menu(feats_meta, 70))
     self.featsbutton:SetPosition(320, 2, 0)
-    self.featsbutton:SetScale(1)   
+    self.featsbutton:SetScale(1)
 
     -- Lets make it fit.
     self.bmenu:SetPosition(-120, -250, 0)
@@ -69,7 +73,7 @@ local function patch_feats(self)
                     end
                 end
             end
-        end 
+        end
     end
 
     -- Add a feat to the achievement list.
@@ -101,14 +105,14 @@ local function patch_feats(self)
                         print("Added " .. name .. " to feats list.")
                         table.insert(self.persistdata.feats, temp_key)
                         self.dirty = true
-                        self:Save() 
+                        self:Save()
                     else
                         --The key already exists.
                         print("The key (" .. name .. ") already exists.")
                         self.dirty = true
-                        self:Save() 
+                        self:Save()
                     end
-                end              
+                end
             end
             --]]
         end
@@ -144,7 +148,7 @@ local function patch_feats(self)
 
         -- Add feats from other mods.
         print("DEBUGEXTERNAL")
-        for functionkey,functionvalue in pairs(feats_collection) do         
+        for functionkey,functionvalue in pairs(feats_collection) do
             ------------------------------------------------------------
             -- Here we want to run any external instances of AddFeat. --
             ------------------------------------------------------------
@@ -152,7 +156,7 @@ local function patch_feats(self)
         end
 
         self:old_Set(str, callback)
-    end 
+    end
 
     --Uncomment to reset save data if needed.
     --self:Reset()
@@ -162,6 +166,6 @@ end
 AddGlobalClassPostConstruct("playerprofile", "PlayerProfile", patch_feats)
 
 -- Sample externally added feat.
-local ext_feat = function() AddFeat("External Feat", "External Feat Description", locked = true, hidden = false) end
+local ext_feat = function() AddFeat("External Feat", "External Feat Description", true, false) end
 table.insert(feats_collection, ext_feat)
 
