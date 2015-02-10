@@ -16,7 +16,12 @@ local BigPopupDialogScreen = require "screens/bigpopupdialog"
 local MainScreen = require "screens/mainscreen"
 
 -- We want to load the existing feats.
-local cached_feats = loaded_feats
+
+--[[ ERROR : variable 'loaded_feats' is not declared
+if loaded_feats then
+	local cached_feats = loaded_feats
+end
+--]]
 
 -- Create the feats screen.
 local FeatsScreen = Class(Screen, function(self, profile)
