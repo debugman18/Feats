@@ -5,7 +5,7 @@ local require = GLOBAL.require
 -- Export our modenv.
 GLOBAL.package.loaded["feats.modenv"] = env
 
--- Debugging config stuff. --TODO
+-- Debugging config stuff.
 local debugging = GetModConfigData("debugprint") or false
 print("Debugging is " .. tostring(debugging))
 
@@ -18,11 +18,13 @@ local FeatsScreen = require "screens/featsscreen"
 -- PersistentData module stuff.
 local PersistentData = require "persistentdata"
 local Data = PersistentData("FeatsData")
+local Score = PersistentData("FeatsScore")
 
 ----------------------------------------------------------------------------
  
 local function Save(dirty)
     Data:Save(dirty)
+    Score:Save(dirty)
     if debugging then
         print("------------------------------")
         print("DEBUG-SAVE")
@@ -31,10 +33,17 @@ end
  
 local function Load()
     Data:Load()
+    Score:Load()
     if debugging then
         print("------------------------------")
         print("DEBUG-LOAD")
     end
+end
+
+----------------------------------------------------------------------------
+
+GetFeatScore = function()
+    return Score:GetValue("FeatsScore") or 0
 end
 
 ----------------------------------------------------------------------------
@@ -141,6 +150,36 @@ UnlockFeat = function(keyname, callback)
                 print(locked)
             end
 
+            -- Make sure the feat has not been unlocked already.
+            if locked == true then
+
+                -- Increase our total score.
+                for scorekey,score in ipairs(Data:GetValue(keyname)) do
+                    if scorekey == 5 then
+                        if debugging then
+                            print("------------------------------")
+                            print("DEBUG-SCORE")
+                            print("Feat has score value of:")
+                            print(score)
+                        end
+
+                        local oldscore = Score:GetValue("FeatsScore") or 0
+                        newscore = oldscore + score
+                        Score:SetValue("FeatsScore", newscore)
+
+                        if debugging then
+                            -- Let's assure the score is changed.
+                            print("------------------------------")
+                            print("Old score was:")
+                            print(oldscore)
+                            print("------------------------------")
+                            print("Total score is now:")
+                            print(newscore)
+                        end            
+                    end
+                end
+            end
+
             locked = false
             Data:GetValue(keyname)[3] = locked
 
@@ -155,6 +194,7 @@ UnlockFeat = function(keyname, callback)
             end            
         end
     end
+
     Save(true)
 end
 
@@ -190,34 +230,39 @@ end
 ----------------------------------------------------------------------------
 
 -- Add a feat to the achievement list.
-AddFeat = function(keyname, name, description, locked, hidden)
+AddFeat = function(keyname, name, description, locked, hidden, score)
     GLOBAL.assert(keyname, "Added feats must have a unique identifier.")
     local name = name or "No Name"
     local description = description or "No Description"
     local locked = locked or true
     local hidden = hidden or false
+    local score = score or 0
 
+    local feat = {name, description, locked, hidden, score}
+    local feat_exists = Data:GetValue(keyname)
     if debugging then
         print("------------------------------")
-        print("Adding feat:")
-        print("Key: " .. keyname)
-        print("Name: " .. name)
-        print("Description: " .. description)
-        print("Locked: " .. tostring(locked))
-        print("Hidden: " .. tostring(hidden))
+        print("DEBUG-REDUNDANCY")
     end
-
-    local feat = {name, description, locked, hidden}
-    local feat_exists = Data:GetValue(keyname)
     if not feat_exists then
+        if debugging then
+            print("------------------------------")
+            print("Adding feat:")
+            print("Key: " .. keyname)
+            print("Name: " .. name)
+            print("Description: " .. description)
+            print("Locked: " .. tostring(locked))
+            print("Hidden: " .. tostring(hidden))
+            print("Score: " .. tostring(score))
+        end
         Data:SetValue(keyname, feat)
         Save()
+        -- Let's assure that we saved.
+        print(Data:GetValue(keyname))
     elseif debugging then
-        print("Feat already exists. Skipping...")
+        print("------------------------------")
+        print("Feat " .. "\"" .. name .. "\"" .. " already exists. Skipping...")
     end
-
-    -- Let's assure that we saved.
-    print(Data:GetValue(keyname))
 end
 
 ------------------------------------------------------------
@@ -227,11 +272,28 @@ Load()
 
 ------------------------------------------------------------
 
+-- Sometimes we need to reset everything.
+ResetAll = function()
+    if debugging then
+        print("------------------------------")
+        print("DEBUG-RESET")
+    end
+    Data:Reset()
+    Score:Reset()
+    Save()
+end
+
+-- Uncomment to reset everything.
+--ResetAll()
+
+------------------------------------------------------------
+
 -- Add the FeatTrigger component to the player.
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
         if not inst.components.feattrigger then
             if debugging then
+                print("------------------------------")
                 print("Adding feattrigger component to player.")
             end
             inst:AddComponent("feattrigger")
@@ -242,7 +304,7 @@ end)
 ------------------------------------------------------------
 
 -- Deerclops death by fist.
-AddFeat("DeerGuts", "Deer Guts", "Did that honestly behoove you?", true, true)
+AddFeat("DeerGuts", "Deer Guts", "Did that honestly behoove you?", true, true, 100)
 
 local function DeerGutsCheck(inst, deadthing, cause)
     if debugging then

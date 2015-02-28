@@ -1,8 +1,7 @@
 -- TODO: Create a UI implementation which displays feats according to their specifications.
 
--- PersistentData module stuff.
-local PersistentData = require "persistentdata"
-local Data = PersistentData("FeatsData")
+-- Import our modenv.
+local modenv = require "feats.modenv"
 
 -- For convenience.
 local Screen = require "widgets/screen"
@@ -37,9 +36,20 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.bg:SetHAnchor(ANCHOR_MIDDLE)
     self.bg:SetScaleMode(SCALEMODE_FILLSCREEN)
 
+    -------------------------------------------------------------------
+
     -- Columns.
-    local left_col = -RESOLUTION_X*.05 - 60
-    local right_col = RESOLUTION_X*.40 - 130
+
+    -- Dead center.
+	local mid_col = RESOLUTION_X*0
+
+	-- A little to the left.
+	local left_col = -RESOLUTION_X*.37
+
+	-- A little to the right.
+	local right_col = RESOLUTION_X*.37
+
+	-------------------------------------------------------------------
 
 	-- Set the main anchor.    
     self.root = self:AddChild(Widget("root"))
@@ -47,21 +57,47 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.root:SetHAnchor(ANCHOR_MIDDLE)
     self.root:SetScaleMode(SCALEMODE_PROPORTIONAL)
 
+    -------------------------------------------------------------------
+
+   	-- Dim the rest of the screen.
+    self.black = self.root:AddChild(Image("images/global.xml", "square.tex"))
+    self.black:SetVRegPoint(ANCHOR_MIDDLE)
+    self.black:SetHRegPoint(ANCHOR_MIDDLE)
+    self.black:SetVAnchor(ANCHOR_MIDDLE)
+    self.black:SetHAnchor(ANCHOR_MIDDLE)
+    self.black:SetScaleMode(SCALEMODE_FILLSCREEN)
+	self.black:SetTint(0,0,0,.75)	
+
+    -- Set the panel bg.
+    self.feats_panel = self.root:AddChild(Image("images/fepanels.xml", "panel_saveslots.tex"))
+    self.feats_panel:SetPosition(mid_col,0,0)
+
+    -- Our title line.
+    self.featstitle = self.feats_panel:AddChild(Text(TITLEFONT, 55))
+    self.featstitle:SetHAlign(ANCHOR_MIDDLE)
+    self.featstitle:SetPosition(mid_col, RESOLUTION_Y*0.3, 0)
+    self.featstitle:SetRegionSize(400, 70)
+    self.featstitle:SetString("FEATS")
+
+    -- Our score line.
+    self.featscore = self.feats_panel:AddChild(Text(TITLEFONT, 40))
+    self.featscore:SetHAlign(ANCHOR_MIDDLE)
+    self.featscore:SetPosition(mid_col, RESOLUTION_Y*0.23, 0)
+    self.featscore:SetRegionSize(400, 70)
+    self.featscore:SetString("Total Score " .. modenv:GetFeatScore())   
+
+	-------------------------------------------------------------------
+
     -- Our 'return to main menu' button.
     self.returnbutton = self.root:AddChild(ImageButton())
-    self.returnbutton:SetPosition(right_col, 0, 0)
+    self.returnbutton:SetPosition(right_col-80, -100, 0)
     self.returnbutton:SetText("OK")
     self.returnbutton.text:SetColour(0,0,0,1)
     self.returnbutton:SetOnClick(function() self:Return() end)
     self.returnbutton:SetFont(BUTTONFONT)
     self.returnbutton:SetTextSize(40)
 
-    -- Controller support.
-    --[[
-	--self.returnbutton:SetFocusChangeDir(MOVE_LEFT, self.applybutton)
-	--self.returnbutton:SetFocusChangeDir(MOVE_RIGHT, self.morebutton)
-	--self.returnbutton:SetFocusChangeDir(MOVE_UP, self.modconfigbutton)
-	--]]
+	-------------------------------------------------------------------
 
     -- Make our buttons visible.
 	self.default_focus = self.returnbutton
@@ -70,6 +106,31 @@ end)
 
 function FeatsScreen:Return()
 	TheFrontEnd:PopScreen()
+end
+
+-- Our feats grid.
+function FeatsScreen:MakeFeatTile(keyname)
+	
+	-- Button root.
+	local feattile = feats_panel:AddChild(Widget("button"))
+	
+	local name = modenv(slotnum)
+	local description = modenv
+	local locked = modenv
+	local hidden = modenv
+	
+    feattile.bg = widget.base:AddChild(UIAnim())
+    feattile.bg:GetAnimState():SetBuild("savetile")
+    feattile.bg:GetAnimState():SetBank("savetile")
+    feattile.bg:GetAnimState():PlayAnimation("anim")
+	
+	feattile.portraitbg = widget.base:AddChild(Image("images/saveslot_portraits.xml", "background.tex"))
+
+	return feattile
+end
+
+function FeatsScreen:OnClickFeat(keyname)
+	-- Display the details of the specific feat.
 end
 
 return FeatsScreen

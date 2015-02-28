@@ -11,9 +11,13 @@ end)
 local function trim(s)
     return s:match'^%s*(.*%S)%s*$' or ''
 end
- 
+
 function PersistentData:GetSaveName()
     return BRANCH == "release" and self.id or self.id .. BRANCH
+end
+
+function PersistentData:Reset()
+    self.persistdata = {}
 end
 
 function PersistentData:SetValue(key, value)
@@ -24,7 +28,7 @@ end
 function PersistentData:GetValue(key)
     return self.persistdata[key]
 end
- 
+
 function PersistentData:Save(dirty, callback)
     if self.dirty or dirty then
         local str = json.encode(self.persistdata)
