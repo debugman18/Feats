@@ -1,24 +1,35 @@
-GLOBAL.setmetatable(env, {__index=GLOBAL})
-
---[[ do without
--- For convenience purposes.
+-- Convenience.
+--GLOBAL.setmetatable(env, {__index=GLOBAL})
 local require = GLOBAL.require
---]]
 
+-- Screen stuff.
 require "prefabutil"
-
 local Screen = require "widgets/screen"
 local Menu = require "widgets/menu"
-
 local FeatsScreen = require "screens/featsscreen"
 
--- This won't be nil for long.
-loaded_feats = nil
-
--- Let other mods add their own feats.
-feats_collection = {}
+-- PersistentData module stuff.
+local PersistentData = require "persistentdata"
+local Data = PersistentData("FeatsData")
 
 ----------------------------------------------------------------------------
+ 
+local function Save()
+    Data:Save()
+    print("------------------------------")
+    print("DEBUG-SAVE")
+end
+ 
+local function Load()
+    Data:Load()
+    print("------------------------------")
+    print("DEBUG-LOAD")
+    print(Data:GetValue("NormalFeat"))
+end
+
+----------------------------------------------------------------------------
+
+-- Append the load game menu with feats button.
 
 -- Opens the feats screen.
 local function FeatsOpen()
@@ -42,130 +53,77 @@ AddGlobalClassPostConstruct("screens/loadgamescreen", "LoadGameScreen", append_f
 
 ----------------------------------------------------------------------------
 
--- Patch our feats into profile data.
-local function patch_feats(self)
+-- Add a feat to the achievement list.
+function AddFeat(keyname, name, description, locked, hidden)
+    GLOBAL.assert(keyname, "Added feats must have a unique identifier.")
+    local name = name or "No Name"
+    local description = description or "No Description"
+    local locked = locked or true
+    local hidden = hidden or false
 
-    -- We don't want to abandon the old set function.
-    self.old_Set = self.Set
+    print("------------------------------")
+    print("Adding feat:")
+    print("Key: " .. keyname)
+    print("Name: " .. name)
+    print("Description: " .. description)
+    print("Locked: " .. tostring(locked))
+    print("Hidden: " .. tostring(hidden))
 
-    -- Avoid redundancy and errors.
-    function CreateFeats()
-        print("Checking for persistdata.")
-
-        -- TODO: Loaded feats doesn't exist yet.
-        print("STEP-2: " .. tostring(loaded_feats))
-
-        if self.persistdata then
-            if not loaded_feats then
-                print("Feats will now persist.")
-                self.persistdata.feats = {debug = {"dummy_name", "dummy_description"}}
-                self.dirty = true
-                self:Save()
-            else
-                print("Feats already persist.")
-                self.persistdata.feats = loaded_feats or {}
-                for k,v in pairs(self.persistdata.feats) do
-                    print("DEBUGTABLE")
-                    print(tostring(k))
-                    for x,y in pairs(v) do
-                        print(tostring(x))
-                        print(tostring(y))
-                    end
-                end
-            end
-        end
+    local feat = {name, description, locked, hidden}
+    local feat_exists = Data:GetValue(keyname)
+    if not feat_exists then
+        Data:SetValue(keyname, feat)
+        Save()
+    else
+        print("Feat already exists. Skipping...")
     end
 
-    -- Add a feat to the achievement list.
-    function AddFeat(name, description, locked, hidden)
-        print("Attempting to add feat(s).")
-
-        -- Add values straight to this temp table.
-        local temp_key = {
-            name = name,
-            description = description,
-            locked = locked or nil,
-            hidden = hidden or nil
-        }
-
-        if self.persistdata and self.persistdata.feats then
-
-            -- TODO: Fix redundancy check.
-            table.insert(self.persistdata.feats, temp_key)
-            self.dirty = true
-            self:Save()
-
-            --[[
-            for key,feat in pairs(self.persistdata.feats) do
-                for n,string in pairs(feat) do
-                    print("DATA_NAME: " .. n)
-                    print("FEAT_NAME: " .. name)
-                    if not string == name then
-                        -- Add our table to the feats table.
-                        print("Added " .. name .. " to feats list.")
-                        table.insert(self.persistdata.feats, temp_key)
-                        self.dirty = true
-                        self:Save()
-                    else
-                        --The key already exists.
-                        print("The key (" .. name .. ") already exists.")
-                        self.dirty = true
-                        self:Save()
-                    end
-                end
-            end
-            --]]
-        end
-
-    end
-
-    -- Load our dirty variable.
-    self.Set = function(self, str, callback)
-        print("DEBUGSTRING: " .. str)
-
-        -- Store our dirty variable elsewhere.
-        data = GLOBAL.json.decode(str)
-        local feats = data["feats"]
-        if feats then
-            for k,v in pairs(feats) do
-                for n,string in pairs(v) do
-                    if n == name then
-                        print("DEBUGDATA: " .. string)
-                    end
-                end
-            end
-        end
-        loaded_feats = data["feats"]
-        print("STEP-1: " .. tostring(loaded_feats))
-
-        -- Initialize the feats table.
-        CreateFeats()
-
-        -- These are sample feats for testing.
-        AddFeat("Debug Feat", "Debug Feat Description")
-        AddFeat("Test Feat", "Test Feat Description")
-        AddFeat("Dummy Feat", "Dummy Feat Description")
-
-        -- Add feats from other mods.
-        print("DEBUGEXTERNAL")
-        for functionkey,functionvalue in pairs(feats_collection) do
-            ------------------------------------------------------------
-            -- Here we want to run any external instances of AddFeat. --
-            ------------------------------------------------------------
-            functionvalue()
-        end
-
-        self:old_Set(str, callback)
-    end
-
-    --Uncomment to reset save data if needed.
-    --self:Reset()
+    -- Let's assure that we saved.
+    print(Data:GetValue(keyname))
 end
 
--- Apply the patch.
-AddGlobalClassPostConstruct("playerprofile", "PlayerProfile", patch_feats)
+------------------------------------------------------------
 
--- Sample externally added feat.
-local ext_feat = function() AddFeat("External Feat", "External Feat Description", true, false) end
-table.insert(feats_collection, ext_feat)
+-- Unlock an arbitary feat.
+function UnlockFeat(keyname)
+    for propertykey,locked in pairs(Data:GetValue(keyname)) do
+        print("------------------------------")
+        print("DEBUG-UNLOCK")
+        if propertykey == 3 then
+            print("Feat is locked:")
+            print(locked)
+            locked = false
+            print("------------------------------")
+            print("Unlocked: " .. keyname)
+
+            -- Let's assure the feat is unlocked.
+            print("Feat is locked:")
+            print(locked)            
+        end
+    end
+end
+
+------------------------------------------------------------
+
+-- Load before we add feats, so we can do a redundancy check.
+Load()
+
+------------------------------------------------------------
+
+-- These are sample feats for testing.
+AddFeat("NormalFeat", "Normal Feat", "Normal Feat Description")
+AddFeat("LockedFeat", "Locked Feat", "Locked Feat Description", true)
+AddFeat("HiddenFeat", "Hidden Feat", "Hidden Feat Description", nil, true)
+
+AddFeat("RainFeat", "Rain Get", "Saw rain!", true)
+
+------------------------------------------------------------
+
+-- Unlock a sample feat.
+UnlockFeat("LockedFeat")
+
+------------------------------------------------------------
+
+-- Add our feats to certain events in the world.
+
 

@@ -15,7 +15,7 @@ end
 function PersistentData:GetSaveName()
     return BRANCH == "release" and self.id or self.id .. BRANCH
 end
- 
+
 function PersistentData:SetValue(key, value)
     self.persistdata[key] = value
     self.dirty = true
