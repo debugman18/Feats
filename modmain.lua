@@ -280,7 +280,7 @@ ResetAll = function()
     end
     Data:Reset()
     Score:Reset()
-    Save()
+    Save(true)
 end
 
 -- Uncomment to reset everything.
