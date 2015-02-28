@@ -17,8 +17,8 @@ local Data = PersistentData("FeatsData")
 
 ----------------------------------------------------------------------------
  
-local function Save()
-    Data:Save()
+local function Save(dirty)
+    Data:Save(dirty)
     print("------------------------------")
     print("DEBUG-SAVE")
 end
@@ -27,7 +27,6 @@ local function Load()
     Data:Load()
     print("------------------------------")
     print("DEBUG-LOAD")
-    print(Data:GetValue("NormalFeat"))
 end
 
 ----------------------------------------------------------------------------
@@ -57,13 +56,17 @@ AddGlobalClassPostConstruct("screens/loadgamescreen", "LoadGameScreen", append_f
 
 -- Unhide an arbitary feat.
 UnhideFeat = function(keyname, callback)
-    for propertykey,hidden in pairs(Data:GetValue(keyname)) do
+    Load()
+    for propertykey,hidden in ipairs(Data:GetValue(keyname)) do
         if propertykey == 4 then
             print("------------------------------")
             print("DEBUG-UNHIDE")
             print("Feat is hidden:")
             print(hidden)
+
             hidden = false
+            Data:GetValue(keyname)[4] = hidden
+
             print("------------------------------")
             print("Unhid: " .. keyname)
             print("------------------------------")
@@ -76,17 +79,22 @@ UnhideFeat = function(keyname, callback)
     if callback then
         callback()
     end
+    Save(true)
 end
 
 -- Hide an arbitary feat.
 HideFeat = function(keyname, callback)
-    for propertykey,hidden in pairs(Data:GetValue(keyname)) do
+    Load()
+    for propertykey,hidden in ipairs(Data:GetValue(keyname)) do
         if propertykey == 4 then
             print("------------------------------")
             print("DEBUG-HIDE")
             print("Feat is hidden:")
             print(hidden)
+
             hidden = true
+            Data:GetValue(keyname)[4] = hidden
+
             print("------------------------------")
             print("Unhid: " .. keyname)
             print("------------------------------")
@@ -99,20 +107,25 @@ HideFeat = function(keyname, callback)
     if callback then
         callback()
     end
+    Save(true)
 end
 
 ----------------------------------------------------------------------------
 
 -- Unlock an arbitary feat.
 UnlockFeat = function(keyname, callback)
+    Load()
     UnhideFeat(keyname, callback)
-    for propertykey,locked in pairs(Data:GetValue(keyname)) do
+    for propertykey,locked in ipairs(Data:GetValue(keyname)) do
         if propertykey == 3 then
             print("------------------------------")
             print("DEBUG-UNLOCK")
             print("Feat is locked:")
             print(locked)
+
             locked = false
+            Data:GetValue(keyname)[3] = locked
+
             print("------------------------------")
             print("Unlocked: " .. keyname)
             print("------------------------------")
@@ -122,17 +135,22 @@ UnlockFeat = function(keyname, callback)
             print(locked)            
         end
     end
+    Save(true)
 end
 
 -- Lock an arbitrary feat.
 LockFeat = function(keyname, callback)
-    for propertykey,locked in pairs(Data:GetValue(keyname)) do
+    Load()
+    for propertykey,locked in ipairs(Data:GetValue(keyname)) do
         if propertykey == 3 then
             print("------------------------------")
             print("DEBUG-LOCK")
             print("Feat is locked:")
             print(locked)
+
             locked = true
+            Data:GetValue(keyname)[3] = locked
+
             print("------------------------------")
             print("Unlocked: " .. keyname)
             print("------------------------------")
@@ -142,6 +160,7 @@ LockFeat = function(keyname, callback)
             print(locked)            
         end
     end
+    Save(true)
 end
 
 ----------------------------------------------------------------------------
@@ -203,7 +222,9 @@ local function DeerGutsCheck(inst, deadthing, cause)
     print(deadthing.prefab)
     print(cause)
     if inst.prefab == deadthing.prefab then
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("DeerGuts")
+        if not GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS) then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("DeerGuts")
+        end
     end 
 end
 

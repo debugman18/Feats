@@ -25,8 +25,8 @@ function PersistentData:GetValue(key)
     return self.persistdata[key]
 end
  
-function PersistentData:Save(callback)
-    if self.dirty then
+function PersistentData:Save(dirty, callback)
+    if self.dirty or dirty then
         local str = json.encode(self.persistdata)
         local insz, outsz = SavePersistentString(self:GetSaveName(), str, ENCODE_SAVES, callback)
     elseif callback then
@@ -37,8 +37,7 @@ end
 function PersistentData:Load(callback)
     TheSim:GetPersistentString(self:GetSaveName(),
         function(load_success, str)
-            -- Can ignore the successfulness cause we check the string
-            self:Set( str, callback )
+            self:Set(str, callback)
         end, false)
 end
  
