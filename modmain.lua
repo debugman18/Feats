@@ -5,6 +5,10 @@ local require = GLOBAL.require
 -- Export our modenv.
 GLOBAL.package.loaded["feats.modenv"] = env
 
+-- Debugging config stuff. --TODO
+local debugging = GetModConfigData("debugprint") or false
+print("Debugging is " .. tostring(debugging))
+
 -- Screen stuff.
 require "prefabutil"
 local Screen = require "widgets/screen"
@@ -19,14 +23,18 @@ local Data = PersistentData("FeatsData")
  
 local function Save(dirty)
     Data:Save(dirty)
-    print("------------------------------")
-    print("DEBUG-SAVE")
+    if debugging then
+        print("------------------------------")
+        print("DEBUG-SAVE")
+    end
 end
  
 local function Load()
     Data:Load()
-    print("------------------------------")
-    print("DEBUG-LOAD")
+    if debugging then
+        print("------------------------------")
+        print("DEBUG-LOAD")
+    end
 end
 
 ----------------------------------------------------------------------------
@@ -59,21 +67,25 @@ UnhideFeat = function(keyname, callback)
     Load()
     for propertykey,hidden in ipairs(Data:GetValue(keyname)) do
         if propertykey == 4 then
-            print("------------------------------")
-            print("DEBUG-UNHIDE")
-            print("Feat is hidden:")
-            print(hidden)
+            if debugging then
+                print("------------------------------")
+                print("DEBUG-UNHIDE")
+                print("Feat is hidden:")
+                print(hidden)
+            end
 
             hidden = false
             Data:GetValue(keyname)[4] = hidden
 
-            print("------------------------------")
-            print("Unhid: " .. keyname)
-            print("------------------------------")
+            if debugging then
+                print("------------------------------")
+                print("Unhid: " .. keyname)
+                print("------------------------------")
 
-            -- Let's assure the feat is unhidden.
-            print("Feat is hidden:")
-            print(hidden)            
+                -- Let's assure the feat is unhidden.
+                print("Feat is hidden:")
+                print(hidden)     
+            end      
         end
     end
     if callback then
@@ -87,21 +99,25 @@ HideFeat = function(keyname, callback)
     Load()
     for propertykey,hidden in ipairs(Data:GetValue(keyname)) do
         if propertykey == 4 then
-            print("------------------------------")
-            print("DEBUG-HIDE")
-            print("Feat is hidden:")
-            print(hidden)
+            if debugging then
+                print("------------------------------")
+                print("DEBUG-HIDE")
+                print("Feat is hidden:")
+                print(hidden)
+            end
 
             hidden = true
             Data:GetValue(keyname)[4] = hidden
 
-            print("------------------------------")
-            print("Unhid: " .. keyname)
-            print("------------------------------")
+            if debugging then
+                print("------------------------------")
+                print("Unhid: " .. keyname)
+                print("------------------------------")
 
-            -- Let's assure the feat is hidden.
-            print("Feat is hidden:")
-            print(hidden)            
+                -- Let's assure the feat is hidden.
+                print("Feat is hidden:")
+                print(hidden)  
+            end          
         end
     end
     if callback then
@@ -118,21 +134,25 @@ UnlockFeat = function(keyname, callback)
     UnhideFeat(keyname, callback)
     for propertykey,locked in ipairs(Data:GetValue(keyname)) do
         if propertykey == 3 then
-            print("------------------------------")
-            print("DEBUG-UNLOCK")
-            print("Feat is locked:")
-            print(locked)
+            if debugging then
+                print("------------------------------")
+                print("DEBUG-UNLOCK")
+                print("Feat is locked:")
+                print(locked)
+            end
 
             locked = false
             Data:GetValue(keyname)[3] = locked
 
-            print("------------------------------")
-            print("Unlocked: " .. keyname)
-            print("------------------------------")
+            if debugging then
+                print("------------------------------")
+                print("Unlocked: " .. keyname)
+                print("------------------------------")
 
-            -- Let's assure the feat is unlocked.
-            print("Feat is locked:")
-            print(locked)            
+                -- Let's assure the feat is unlocked.
+                print("Feat is locked:")
+                print(locked)
+            end            
         end
     end
     Save(true)
@@ -143,21 +163,25 @@ LockFeat = function(keyname, callback)
     Load()
     for propertykey,locked in ipairs(Data:GetValue(keyname)) do
         if propertykey == 3 then
-            print("------------------------------")
-            print("DEBUG-LOCK")
-            print("Feat is locked:")
-            print(locked)
+            if debugging then
+                print("------------------------------")
+                print("DEBUG-LOCK")
+                print("Feat is locked:")
+                print(locked)
+            end
 
             locked = true
             Data:GetValue(keyname)[3] = locked
 
-            print("------------------------------")
-            print("Unlocked: " .. keyname)
-            print("------------------------------")
+            if debugging then
+                print("------------------------------")
+                print("Unlocked: " .. keyname)
+                print("------------------------------")
 
-            -- Let's assure the feat is locked.
-            print("Feat is locked:")
-            print(locked)            
+                -- Let's assure the feat is locked.
+                print("Feat is locked:")
+                print(locked)            
+            end
         end
     end
     Save(true)
@@ -173,20 +197,22 @@ AddFeat = function(keyname, name, description, locked, hidden)
     local locked = locked or true
     local hidden = hidden or false
 
-    print("------------------------------")
-    print("Adding feat:")
-    print("Key: " .. keyname)
-    print("Name: " .. name)
-    print("Description: " .. description)
-    print("Locked: " .. tostring(locked))
-    print("Hidden: " .. tostring(hidden))
+    if debugging then
+        print("------------------------------")
+        print("Adding feat:")
+        print("Key: " .. keyname)
+        print("Name: " .. name)
+        print("Description: " .. description)
+        print("Locked: " .. tostring(locked))
+        print("Hidden: " .. tostring(hidden))
+    end
 
     local feat = {name, description, locked, hidden}
     local feat_exists = Data:GetValue(keyname)
     if not feat_exists then
         Data:SetValue(keyname, feat)
         Save()
-    else
+    elseif debugging then
         print("Feat already exists. Skipping...")
     end
 
@@ -205,7 +231,9 @@ Load()
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
         if not inst.components.feattrigger then
-            print("Adding feattrigger component to player.")
+            if debugging then
+                print("Adding feattrigger component to player.")
+            end
             inst:AddComponent("feattrigger")
         end
     end
@@ -217,10 +245,12 @@ end)
 AddFeat("DeerGuts", "Deer Guts", "Did that honestly behoove you?", true, true)
 
 local function DeerGutsCheck(inst, deadthing, cause)
-    print("DEERGUTSCHECK")
-    print(inst.prefab)
-    print(deadthing.prefab)
-    print(cause)
+    if debugging then
+        print("DEERGUTSCHECK")
+        print(inst.prefab)
+        print(deadthing.prefab)
+        print(cause)
+    end
     if inst.prefab == deadthing.prefab then
         if not GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS) then
             GLOBAL.GetPlayer().components.feattrigger:Trigger("DeerGuts")
