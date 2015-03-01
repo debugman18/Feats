@@ -98,7 +98,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
     -- Our feats menu/list.
     self.feats_list = self.feats_panel:AddChild(Menu({}, 60, false))
-    self.feats_list:SetPosition(0, -20, 0)
+    self.feats_list:SetPosition(0, -80, 0)
 
 	-------------------------------------------------------------------
 
