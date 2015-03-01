@@ -17,14 +17,17 @@ local FeatsScreen = require "screens/featsscreen"
 
 -- PersistentData module stuff.
 local PersistentData = require "persistentdata"
+
 local Feats = PersistentData("FeatsData")
 local Score = PersistentData("FeatsScore")
+local Stats = PersistentData("FeatsMetrics")
 
 ----------------------------------------------------------------------------
  
 local function Save(dirty)
     Feats:Save(dirty)
     Score:Save(dirty)
+    Stats:Save(dirty)
     if debugging then
         print("------------------------------")
         print("DEBUG-SAVE")
@@ -34,6 +37,7 @@ end
 local function Load()
     Feats:Load()
     Score:Load()
+    Stats:Load()
     if debugging then
         print("------------------------------")
         print("DEBUG-LOAD")
@@ -97,9 +101,9 @@ UnhideFeat = function(keyname, callback)
             if debugging then
                 print("------------------------------")
                 print("Unhid: " .. keyname)
-                print("------------------------------")
 
                 -- Let's assure the feat is unhidden.
+                print("------------------------------")
                 print("Feat is hidden:")
                 print(hidden)     
             end      
@@ -129,9 +133,9 @@ HideFeat = function(keyname, callback)
             if debugging then
                 print("------------------------------")
                 print("Unhid: " .. keyname)
-                print("------------------------------")
 
                 -- Let's assure the feat is hidden.
+                print("------------------------------")
                 print("Feat is hidden:")
                 print(hidden)  
             end          
@@ -180,6 +184,7 @@ UnlockFeat = function(keyname, callback)
                             print("------------------------------")
                             print("Old score was:")
                             print(oldscore)
+
                             print("------------------------------")
                             print("Total score is now:")
                             print(newscore)
@@ -197,6 +202,7 @@ UnlockFeat = function(keyname, callback)
                 print("------------------------------")
 
                 -- Let's assure the feat is unlocked.
+                print("------------------------------")
                 print("Feat is locked:")
                 print(locked)
             end            
@@ -224,9 +230,9 @@ LockFeat = function(keyname, callback)
             if debugging then
                 print("------------------------------")
                 print("Unlocked: " .. keyname)
-                print("------------------------------")
 
                 -- Let's assure the feat is locked.
+                print("------------------------------")
                 print("Feat is locked:")
                 print(locked)            
             end
@@ -316,12 +322,16 @@ AddFeat("DeerGuts", "Deer Guts", "Did that honestly behoove you?", true, true, 1
 
 local function DeerGutsCheck(inst, deadthing, cause)
     if debugging then
+        print("------------------------------")
         print("DEERGUTSCHECK")
-        print(inst.prefab)
-        print(deadthing.prefab)
-        print(cause)
+        print(tostring(inst))
+        print(tostring(deadthing))
+        if cause then
+            print("Killer: " .. cause)
+        end
+        print("Player: " .. GLOBAL.GetPlayer().prefab)
     end
-    if inst.prefab == deadthing.prefab then
+    if GLOBAL.GetPlayer().prefab == cause then
         if not GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS) then
             GLOBAL.GetPlayer().components.feattrigger:Trigger("DeerGuts")
         end
@@ -329,30 +339,57 @@ local function DeerGutsCheck(inst, deadthing, cause)
 end
 
 local function DeerGutsFeat(inst)
-    GLOBAL.GetWorld():ListenForEvent("entity_death", function(world, data) DeerGutsCheck(inst, data.inst, data.cause) end)
+    inst:ListenForEvent("death", function(inst, data) DeerGutsCheck(inst, data.inst, data.cause) end)
 end
 
 AddPrefabPostInit("deerclops", DeerGutsFeat)
 
 ------------------------------------------------------------
 
--- Killed a rabbit.
-AddFeat("RabbitKiller", "Rabbit Slayer", "Absolutely merciless.", true, false, 5)
+-- Killed a rabbit or rabbits.
+AddFeat("RabbitKiller", "Rabbit Slayer", "Killed an innocent rabbit.", true, false, 5)
+AddFeat("RabbitKiller5", "Rabbit Slayer (x5)", "Five rabbits killed.", true, false, 10)
 
 local function RabbitKillerCheck(inst, deadthing, cause)
+    Stats:Load()
+
+    local rabbitkills = Stats:GetValue("RabbitKills") or 0
+    local num = rabbitkills + 1
+
     if debugging then
+        print("------------------------------")
         print("RABBITKILLERCHECK")
-        print(inst.prefab)
-        print(deadthing.prefab)
-        print(cause)
+        print(tostring(inst))
+        print(tostring(deadthing))
+        if cause then
+            print("Killer: " .. cause)
+        end
+        print("Player: " .. GLOBAL.GetPlayer().prefab)
     end
-    if inst.prefab == deadthing.prefab then
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller")
+
+    -- Make sure a player did the killing.
+    if GLOBAL.GetPlayer().prefab == cause then
+        Stats:SetValue("RabbitKills", num)
+        Stats:Save(true)
+
+        if debugging then
+            print("------------------------------")
+            print("DEBUG-METRICS")
+            print("RABBITKILLS:")
+            print(num)
+        end
+
+        if rabbitkills <= 1 then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller")
+        elseif rabbitkills == 5 then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller5")
+        end
     end 
+
 end
 
 local function RabbitKillerFeat(inst)
-    GLOBAL.GetWorld():ListenForEvent("entity_death", function(world, data) RabbitKillerCheck(inst, data.inst, data.cause) end)
+    inst:ListenForEvent("death", function(inst, data) RabbitKillerCheck(inst, data.inst, data.cause) end)
 end
 
 AddPrefabPostInit("rabbit", RabbitKillerFeat)
