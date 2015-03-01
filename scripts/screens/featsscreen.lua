@@ -3,6 +3,15 @@
 -- Import our modenv.
 local modenv = require "feats.modenv"
 
+-- Debugging config stuff.
+local debugging = modenv.GetModConfigData("debugprint") or false
+print("Debugging is " .. tostring(debugging))
+
+-- PersistentData module stuff.
+local PersistentData = require "persistentdata"
+local Feats = PersistentData("FeatsData")
+local Score = PersistentData("FeatsScore")
+
 -- For convenience.
 local Screen = require "widgets/screen"
 local Menu = require "widgets/menu"
@@ -80,6 +89,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.featstitle:SetString("FEATS")
 
     -- Our score line.
+    Score:Load()
     self.featscore = self.feats_panel:AddChild(Text(TITLEFONT, 40))
     self.featscore:SetHAlign(ANCHOR_MIDDLE)
     self.featscore:SetPosition(mid_col, RESOLUTION_Y*0.23, 0)
@@ -102,6 +112,16 @@ local FeatsScreen = Class(Screen, function(self, profile)
     -- Make our buttons visible.
 	self.default_focus = self.returnbutton
     self.returnbutton:MoveToFront()
+
+    if debugging then
+    	print("------------------------------")
+		print("DEBUG-FEATS")
+	end
+	local feats = modenv:GetFeats()
+    for keyname,properties in pairs(feats) do
+    	self:MakeFeatTile(keyname)
+    end
+
 end)
 
 function FeatsScreen:Return()
@@ -110,23 +130,39 @@ end
 
 -- Our feats grid.
 function FeatsScreen:MakeFeatTile(keyname)
-	
+
 	-- Button root.
-	local feattile = feats_panel:AddChild(Widget("button"))
-	
-	local name = modenv(slotnum)
-	local description = modenv
-	local locked = modenv
-	local hidden = modenv
-	
-    feattile.bg = widget.base:AddChild(UIAnim())
-    feattile.bg:GetAnimState():SetBuild("savetile")
-    feattile.bg:GetAnimState():SetBank("savetile")
-    feattile.bg:GetAnimState():PlayAnimation("anim")
-	
+	--local feattile = feats_panel:AddChild(Widget("button"))
+
+	-- Load our feats data.
+  	local feats = modenv:GetFeats()
+  	local keyname = feats[keyname]
+
+	local name = keyname[1]
+	local description = keyname[2]
+	local locked = keyname[3]
+	local hidden = keyname[4]
+	local score = keyname[5]
+
+	if debugging then
+		print("------------------------------")
+		print(name)
+		print(description)
+		print(locked)
+		print(hidden)
+		print(score)
+	end
+
+	--[[
+	feattile.bg = widget.base:AddChild(UIAnim())
+	feattile.bg:GetAnimState():SetBuild("savetile")
+	feattile.bg:GetAnimState():SetBank("savetile")
+	feattile.bg:GetAnimState():PlayAnimation("anim")
+
 	feattile.portraitbg = widget.base:AddChild(Image("images/saveslot_portraits.xml", "background.tex"))
 
 	return feattile
+	--]]
 end
 
 function FeatsScreen:OnClickFeat(keyname)

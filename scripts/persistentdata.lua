@@ -7,7 +7,7 @@ local PersistentData = Class(function(self, id)
     self.dirty = true
     self.id = id
 end)
- 
+
 local function trim(s)
     return s:match'^%s*(.*%S)%s*$' or ''
 end
@@ -18,6 +18,7 @@ end
 
 function PersistentData:Reset()
     self.persistdata = {}
+    self.dirty = true
 end
 
 function PersistentData:SetValue(key, value)

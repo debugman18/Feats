@@ -17,13 +17,13 @@ local FeatsScreen = require "screens/featsscreen"
 
 -- PersistentData module stuff.
 local PersistentData = require "persistentdata"
-local Data = PersistentData("FeatsData")
+local Feats = PersistentData("FeatsData")
 local Score = PersistentData("FeatsScore")
 
 ----------------------------------------------------------------------------
  
 local function Save(dirty)
-    Data:Save(dirty)
+    Feats:Save(dirty)
     Score:Save(dirty)
     if debugging then
         print("------------------------------")
@@ -32,7 +32,7 @@ local function Save(dirty)
 end
  
 local function Load()
-    Data:Load()
+    Feats:Load()
     Score:Load()
     if debugging then
         print("------------------------------")
@@ -42,8 +42,16 @@ end
 
 ----------------------------------------------------------------------------
 
+-- Return the score, if it exists.
 GetFeatScore = function()
+    Score:Load()
     return Score:GetValue("FeatsScore") or 0
+end
+
+-- Return feats, if they exist.
+GetFeats = function()
+    Feats:Load()
+    return Feats.persistdata
 end
 
 ----------------------------------------------------------------------------
@@ -74,7 +82,7 @@ AddGlobalClassPostConstruct("screens/loadgamescreen", "LoadGameScreen", append_f
 -- Unhide an arbitary feat.
 UnhideFeat = function(keyname, callback)
     Load()
-    for propertykey,hidden in ipairs(Data:GetValue(keyname)) do
+    for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 4 then
             if debugging then
                 print("------------------------------")
@@ -84,7 +92,7 @@ UnhideFeat = function(keyname, callback)
             end
 
             hidden = false
-            Data:GetValue(keyname)[4] = hidden
+            Feats:GetValue(keyname)[4] = hidden
 
             if debugging then
                 print("------------------------------")
@@ -106,7 +114,7 @@ end
 -- Hide an arbitary feat.
 HideFeat = function(keyname, callback)
     Load()
-    for propertykey,hidden in ipairs(Data:GetValue(keyname)) do
+    for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 4 then
             if debugging then
                 print("------------------------------")
@@ -116,7 +124,7 @@ HideFeat = function(keyname, callback)
             end
 
             hidden = true
-            Data:GetValue(keyname)[4] = hidden
+            Feats:GetValue(keyname)[4] = hidden
 
             if debugging then
                 print("------------------------------")
@@ -141,7 +149,7 @@ end
 UnlockFeat = function(keyname, callback)
     Load()
     UnhideFeat(keyname, callback)
-    for propertykey,locked in ipairs(Data:GetValue(keyname)) do
+    for propertykey,locked in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 3 then
             if debugging then
                 print("------------------------------")
@@ -154,7 +162,7 @@ UnlockFeat = function(keyname, callback)
             if locked == true then
 
                 -- Increase our total score.
-                for scorekey,score in ipairs(Data:GetValue(keyname)) do
+                for scorekey,score in ipairs(Feats:GetValue(keyname)) do
                     if scorekey == 5 then
                         if debugging then
                             print("------------------------------")
@@ -181,7 +189,7 @@ UnlockFeat = function(keyname, callback)
             end
 
             locked = false
-            Data:GetValue(keyname)[3] = locked
+            Feats:GetValue(keyname)[3] = locked
 
             if debugging then
                 print("------------------------------")
@@ -201,7 +209,7 @@ end
 -- Lock an arbitrary feat.
 LockFeat = function(keyname, callback)
     Load()
-    for propertykey,locked in ipairs(Data:GetValue(keyname)) do
+    for propertykey,locked in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 3 then
             if debugging then
                 print("------------------------------")
@@ -211,7 +219,7 @@ LockFeat = function(keyname, callback)
             end
 
             locked = true
-            Data:GetValue(keyname)[3] = locked
+            Feats:GetValue(keyname)[3] = locked
 
             if debugging then
                 print("------------------------------")
@@ -239,7 +247,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score)
     local score = score or 0
 
     local feat = {name, description, locked, hidden, score}
-    local feat_exists = Data:GetValue(keyname)
+    local feat_exists = Feats:GetValue(keyname)
     if debugging then
         print("------------------------------")
         print("DEBUG-REDUNDANCY")
@@ -255,10 +263,10 @@ AddFeat = function(keyname, name, description, locked, hidden, score)
             print("Hidden: " .. tostring(hidden))
             print("Score: " .. tostring(score))
         end
-        Data:SetValue(keyname, feat)
+        Feats:SetValue(keyname, feat)
         Save()
         -- Let's assure that we saved.
-        print(Data:GetValue(keyname))
+        print(Feats:GetValue(keyname))
     elseif debugging then
         print("------------------------------")
         print("Feat " .. "\"" .. name .. "\"" .. " already exists. Skipping...")
@@ -278,7 +286,7 @@ ResetAll = function()
         print("------------------------------")
         print("DEBUG-RESET")
     end
-    Data:Reset()
+    Feats:Reset()
     Score:Reset()
     Save(true)
 end
