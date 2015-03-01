@@ -335,3 +335,24 @@ end
 AddPrefabPostInit("deerclops", DeerGutsFeat)
 
 ------------------------------------------------------------
+
+-- Killed a rabbit.
+AddFeat("RabbitKiller", "Rabbit Slayer", "Absolutely merciless.", true, false, 5)
+
+local function RabbitKillerCheck(inst, deadthing, cause)
+    if debugging then
+        print("RABBITKILLERCHECK")
+        print(inst.prefab)
+        print(deadthing.prefab)
+        print(cause)
+    end
+    if inst.prefab == deadthing.prefab then
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller")
+    end 
+end
+
+local function RabbitKillerFeat(inst)
+    GLOBAL.GetWorld():ListenForEvent("entity_death", function(world, data) RabbitKillerCheck(inst, data.inst, data.cause) end)
+end
+
+AddPrefabPostInit("rabbit", RabbitKillerFeat)
