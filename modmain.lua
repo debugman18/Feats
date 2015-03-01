@@ -318,7 +318,7 @@ end)
 ------------------------------------------------------------
 
 -- Deerclops death by fist.
-AddFeat("DeerGuts", "Deer Guts", "Did that honestly behoove you?", true, true, 100)
+AddFeat("DeerGuts", "Deer Guts", "Killed the Deerclops with your bare hands!", true, true, 100)
 
 local function DeerGutsCheck(inst, deadthing, cause)
     if debugging then
@@ -348,7 +348,7 @@ AddPrefabPostInit("deerclops", DeerGutsFeat)
 
 -- Killed a rabbit or rabbits.
 AddFeat("RabbitKiller", "Rabbit Slayer", "Killed an innocent rabbit.", true, false, 5)
-AddFeat("RabbitKiller5", "Rabbit Slayer (x5)", "Five rabbits killed.", true, false, 10)
+AddFeat("RabbitKiller100", "Rabbit Eradicator", "Killed one-hundred rabbits!", true, true, 25)
 
 local function RabbitKillerCheck(inst, deadthing, cause)
     Stats:Load()
@@ -381,8 +381,8 @@ local function RabbitKillerCheck(inst, deadthing, cause)
 
         if rabbitkills <= 1 then
             GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller")
-        elseif rabbitkills == 5 then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller5")
+        elseif rabbitkills >= 100 then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller100")
         end
     end 
 

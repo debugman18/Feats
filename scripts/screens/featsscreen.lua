@@ -94,7 +94,11 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.featscore:SetHAlign(ANCHOR_MIDDLE)
     self.featscore:SetPosition(mid_col, RESOLUTION_Y*0.23, 0)
     self.featscore:SetRegionSize(400, 70)
-    self.featscore:SetString("Total Score " .. modenv:GetFeatScore())   
+    self.featscore:SetString("Total Score " .. modenv:GetFeatScore()) 
+
+    -- Our feats menu/list.
+    self.feats_list = self.feats_panel:AddChild(Menu({}, 60, false))
+    self.feats_list:SetPosition(0, -20, 0)
 
 	-------------------------------------------------------------------
 
@@ -113,13 +117,24 @@ local FeatsScreen = Class(Screen, function(self, profile)
 	self.default_focus = self.returnbutton
     self.returnbutton:MoveToFront()
 
+    ------------------------------
+
     if debugging then
-    	print("------------------------------")
-		print("DEBUG-FEATS")
-	end
-	local feats = modenv:GetFeats()
+        print("------------------------------")
+        print("DEBUG-FEATS")
+    end
+
+    local feats = modenv:GetFeats()
+
     for keyname,properties in pairs(feats) do
-    	self:MakeFeatTile(keyname)
+
+        if debugging then
+            print("------------------------------")
+            print("DEBUG-MENU")
+        end
+
+    	local tile = self:MakeFeatTile(keyname)
+        self.feats_list:AddCustomItem(tile, Vector3(0,0,0))
     end
 
 end)
@@ -130,9 +145,6 @@ end
 
 -- Our feats grid.
 function FeatsScreen:MakeFeatTile(keyname)
-
-	-- Button root.
-	--local feattile = feats_panel:AddChild(Widget("button"))
 
 	-- Load our feats data.
   	local feats = modenv:GetFeats()
@@ -146,6 +158,7 @@ function FeatsScreen:MakeFeatTile(keyname)
 
 	if debugging then
 		print("------------------------------")
+        print("DEBUG-FEAT-TILE")
 		print(name)
 		print(description)
 		print(locked)
@@ -153,20 +166,63 @@ function FeatsScreen:MakeFeatTile(keyname)
 		print(score)
 	end
 
-	--[[
-	feattile.bg = widget.base:AddChild(UIAnim())
-	feattile.bg:GetAnimState():SetBuild("savetile")
-	feattile.bg:GetAnimState():SetBank("savetile")
-	feattile.bg:GetAnimState():PlayAnimation("anim")
+    ------------------------------
 
-	feattile.portraitbg = widget.base:AddChild(Image("images/saveslot_portraits.xml", "background.tex"))
+    -- Feat button.
+    local feattile = Widget("AnimButton")
 
-	return feattile
-	--]]
-end
+    feattile.base = feattile:AddChild(ImageButton())
 
-function FeatsScreen:OnClickFeat(keyname)
-	-- Display the details of the specific feat.
+    -- Apply darkness to locked and/or hidden feats.
+    if hidden and locked then
+        feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
+        feattile.black:SetScale(3,1.2,1)
+        feattile.black:SetPosition(0,5,0)
+        feattile.black:SetTint(0,0,0,.75)
+        feattile.black:SetClickable(false)
+        feattile:Disable()
+    elseif locked then
+        feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
+        feattile.black:SetScale(3,1.2,1)
+        feattile.black:SetPosition(0,5,0)
+        feattile.black:SetTint(0,0,0,.75)
+        feattile.black:SetClickable(false)
+    end
+
+    -- If it isn't hidden, allow us to see the details.
+    if not hidden then
+        feattile.base:SetOnClick(function()
+            if locked then
+                TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
+                "This feat is currently locked!\n" .. description .. "\nScore Value: " .. score, 
+                {
+                    {
+                    text = "OK", cb = function() TheFrontEnd:PopScreen() end
+                    }  
+                }))
+            else
+                TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
+                description .. "\nScore Value: " .. score, 
+                {
+                    {
+                    text = "OK", cb = function() TheFrontEnd:PopScreen() end
+                    }  
+                }))
+            end
+        end)
+    end
+
+    feattile.feat_name = feattile:AddChild(Text(BUTTONFONT, 30))
+    if not hidden then
+        feattile.feat_name:SetString(name)
+    else
+        feattile.feat_name:SetString("????")
+    end
+    feattile.feat_name:SetColour(0,0,0,1)
+
+    ------------------------------
+
+    return feattile
 end
 
 return FeatsScreen
