@@ -113,7 +113,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
     -- Our feats menu/list.
     self.feats_list = self.feats_panel:AddChild(Menu({}, 60, false))
-    self.feats_list:SetPosition(0, -170, 0)
+    self.feats_list:SetPosition(0, -200, 0)
 
 	-------------------------------------------------------------------
 
@@ -137,12 +137,12 @@ local FeatsScreen = Class(Screen, function(self, profile)
     -- Scrolling buttons.
 
 	self.leftbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
-    self.leftbutton:SetPosition(0, 290, 0)
+    self.leftbutton:SetPosition(0, 110, 0)
 	self.leftbutton:SetRotation(-90)
     self.leftbutton:SetOnClick( function() self:Scroll(-display_rows) end)
 	
 	self.rightbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
-    self.rightbutton:SetPosition(0, -300, 0)
+    self.rightbutton:SetPosition(0, -265, 0)
 	self.rightbutton:SetRotation(90)
     self.rightbutton:SetOnClick( function() self:Scroll(display_rows) end)	
 
