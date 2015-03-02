@@ -60,9 +60,9 @@ local FeatsScreen = Class(Screen, function(self, profile)
         local hidden_b = feat_b[4]
 
         if tostring(locked_a) > tostring(locked_b) then
-            return tostring(locked_a) > tostring(locked_b)
-        elseif tostring(locked_a) > tostring(hidden_b) then
-            return tostring(locked_a) < tostring(hidden_b)
+            return tostring(locked_a) < tostring(locked_b)
+        elseif tostring(hidden_b) > tostring(locked_a) then
+            return tostring(hidden_b) > tostring(locked_a)
         end 
 
     end)
