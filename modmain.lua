@@ -19,8 +19,15 @@ local FeatsScreen = require "screens/featsscreen"
 local PersistentData = require "persistentdata"
 
 local Feats = PersistentData("FeatsData")
+
 local Score = PersistentData("FeatsScore")
 local Stats = PersistentData("FeatsMetrics")
+
+local tiny_score = 5
+local small_score = 10
+local med_score = 20
+local large_score = 50
+local huge_score = 100
 
 ----------------------------------------------------------------------------
  
@@ -319,15 +326,16 @@ end
 ----------------------------------------------------------------------------
 
 -- Add a feat to the achievement list.
-AddFeat = function(keyname, name, description, locked, hidden, score)
+AddFeat = function(keyname, name, description, locked, hidden, score, hint)
     GLOBAL.assert(keyname, "Added feats must have a unique identifier.")
     local name = name or "No Name"
     local description = description or "No Description"
     local locked = locked or true
     local hidden = hidden or false
     local score = score or 0
+    local hint = hint or "Fulfill this feat's qualifier to see it."
 
-    local feat = {name, description, locked, hidden, score}
+    local feat = {name, description, locked, hidden, score, hint}
     local feat_exists = Feats:GetValue(keyname)
     if debugging then
         print("------------------------------")
@@ -343,6 +351,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score)
             print("Locked: " .. tostring(locked))
             print("Hidden: " .. tostring(hidden))
             print("Score: " .. tostring(score))
+            print("Hint: " .. hint)
         end
         Feats:SetValue(keyname, feat)
         Save()
@@ -394,7 +403,7 @@ end)
 ------------------------------------------------------------
 
 -- Deerclops death by fist.
-AddFeat("DeerGuts", "Deer Guts", "Killed the Deerclops with your bare hands!", true, true, 100)
+AddFeat("DeerGuts", "Deer Guts", "Killed the Deerclops with your bare hands!", true, true, huge_score)
 
 local function DeerGutsCheck(inst, deadthing, cause)
     if debugging then
@@ -423,8 +432,8 @@ AddPrefabPostInit("deerclops", DeerGutsFeat)
 ------------------------------------------------------------
 
 -- Killed a rabbit or rabbits.
-AddFeat("RabbitKiller", "Rabbit Slayer", "Killed an innocent rabbit.", true, false, 5)
-AddFeat("RabbitKiller100", "Rabbit Eradicator", "Killed one-hundred rabbits!", true, true, 25)
+AddFeat("RabbitKiller", "Hare Hunter", "Killed an innocent rabbit.", true, false, tiny_score, "Kill a rabbit to unlock this feat.")
+AddFeat("RabbitKiller100", "Rabbit Eradicator", "Killed one-hundred rabbits!", true, true, med_score)
 
 local function RabbitKillerCheck(inst, deadthing, cause)
     Stats:Load()
@@ -472,11 +481,18 @@ AddPrefabPostInit("rabbit", RabbitKillerFeat)
 
 ------------------------------------------------------------
 
--- Dummy feats to test scrolling.
-AddFeat("Dummy0", "Dummy0", "This exists to test scrolling.")
-AddFeat("Dummy1", "Dummy1", "This exists to test scrolling.")
-AddFeat("Dummy2", "Dummy2", "This exists to test scrolling.")
-AddFeat("Dummy3", "Dummy3", "This exists to test scrolling.")
-AddFeat("Dummy4", "Dummy4", "This exists to test scrolling.")
-AddFeat("Dummy5", "Dummy5", "This exists to test scrolling.")
-AddFeat("Dummy6", "Dummy6", "This exists to test scrolling.")
+local altar_hint = "Look deep underground to unlock this feat!"
+AddFeat("AltarPrototyper", "Cultist", "Prototyped an item at the Altar.", true, true, large_score, altar_hint)
+
+local function AltarProtyperFlag(inst)
+    local onactivate_cached = inst.components.prototyper.onactivate
+    inst.components.prototyper.onactivate = function()
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("AltarPrototyper")
+        onactivate_cached()
+    end
+end
+
+AddPrefabPostInit("ancient_altar", AltarProtyperFlag)
+AddPrefabPostInit("ancient_altar_broken", AltarProtyperFlag)
+
+------------------------------------------------------------

@@ -42,6 +42,33 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.featnames = modenv:GetFeatNames()
     self.feats = modenv:GetFeats()
 
+    -------------------------------------------------------------------
+
+    -- We'll sort the feats table.
+    if debugging then
+        print("------------------------------")
+        print("DEBUG-SORT")
+    end
+
+    table.sort(self.featnames, function(a,b)
+        local feat_a = self.feats[a]
+        local locked_a = feat_a[3]
+        local hidden_a = feat_a[4]
+
+        local feat_b = self.feats[b]
+        local locked_b = feat_b[3]
+        local hidden_b = feat_b[4]
+
+        if tostring(locked_a) > tostring(locked_b) then
+            return tostring(locked_a) > tostring(locked_b)
+        elseif tostring(locked_a) > tostring(hidden_b) then
+            return tostring(locked_a) < tostring(hidden_b)
+        end 
+
+    end)
+
+    -------------------------------------------------------------------
+
     -- Stuff for scrolling.
     self.featwidgets = {}
     self.option_offset = 0
@@ -165,6 +192,7 @@ function FeatsScreen:MakeFeatTile(keyname)
 	local locked = keyname[3]
 	local hidden = keyname[4]
 	local score = keyname[5]
+    local hint = keyname[6]
 
 	if debugging then
 		print("------------------------------")
@@ -174,6 +202,7 @@ function FeatsScreen:MakeFeatTile(keyname)
 		print(locked)
 		print(hidden)
 		print(score)
+        print(hint)
 	end
 
     ------------------------------
@@ -204,7 +233,7 @@ function FeatsScreen:MakeFeatTile(keyname)
         feattile.base:SetOnClick(function()
             if locked then
                 TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
-                "This feat is currently locked!\n" .. description .. "\nScore Value: " .. score, 
+                "This feat is currently locked!\n" .. hint .. "\nScore Value: " .. score, 
                 {
                     {
                     text = "OK", cb = function() TheFrontEnd:PopScreen() end
@@ -237,6 +266,7 @@ end
 
 function FeatsScreen:RefreshOptions()
 	if debugging then
+        print("------------------------------")
 		print("DEBUG-REFRESH")
 	end
 
