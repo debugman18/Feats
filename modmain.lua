@@ -154,7 +154,7 @@ AddGlobalClassPostConstruct("screens/loadgamescreen", "LoadGameScreen", append_f
 
 -- Unhide an arbitary feat.
 UnhideFeat = function(keyname, callback)
-    Load()
+    Feats:Load()
     for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 4 then
             if debugging then
@@ -166,6 +166,7 @@ UnhideFeat = function(keyname, callback)
 
             hidden = false
             Feats:GetValue(keyname)[4] = hidden
+            Feats:Save(true)
 
             if debugging then
                 print("------------------------------")
@@ -181,12 +182,11 @@ UnhideFeat = function(keyname, callback)
     if callback then
         callback()
     end
-    Save(true)
 end
 
 -- Hide an arbitary feat.
 HideFeat = function(keyname, callback)
-    Load()
+    Feats:Load()
     for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 4 then
             if debugging then
@@ -198,6 +198,7 @@ HideFeat = function(keyname, callback)
 
             hidden = true
             Feats:GetValue(keyname)[4] = hidden
+            Feats:Save(true)
 
             if debugging then
                 print("------------------------------")
@@ -213,7 +214,6 @@ HideFeat = function(keyname, callback)
     if callback then
         callback()
     end
-    Save(true)
 end
 
 ----------------------------------------------------------------------------
@@ -221,7 +221,6 @@ end
 -- Unlock an arbitary feat.
 UnlockFeat = function(keyname, callback)
     Load()
-    UnhideFeat(keyname, callback)
     for propertykey,locked in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 3 then
             if debugging then
@@ -233,6 +232,13 @@ UnlockFeat = function(keyname, callback)
 
             -- Make sure the feat has not been unlocked already.
             if locked == true then
+
+                -- Notify the player.
+                local title = "You accomplished a new feat!\n" .. "\"" .. Feats:GetValue(keyname)[1] .. "\""
+                TheFrontEnd:ShowTitle(title,subtitle)
+
+                -- Unhide the feat, since it's unlocked now.
+                UnhideFeat(keyname, callback)
 
                 -- Increase our total score.
                 for scorekey,score in ipairs(Feats:GetValue(keyname)) do
@@ -247,6 +253,7 @@ UnlockFeat = function(keyname, callback)
                         local oldscore = Score:GetValue("FeatsScore") or 0
                         newscore = oldscore + score
                         Score:SetValue("FeatsScore", newscore)
+                        Score:Save(true)
 
                         if debugging then
                             -- Let's assure the score is changed.
@@ -264,6 +271,7 @@ UnlockFeat = function(keyname, callback)
 
             locked = false
             Feats:GetValue(keyname)[3] = locked
+            Feats:Save(true)
 
             if debugging then
                 print("------------------------------")
@@ -277,8 +285,6 @@ UnlockFeat = function(keyname, callback)
             end            
         end
     end
-
-    Save(true)
 end
 
 -- Lock an arbitrary feat.
@@ -295,6 +301,7 @@ LockFeat = function(keyname, callback)
 
             locked = true
             Feats:GetValue(keyname)[3] = locked
+            Feats:Save(true)
 
             if debugging then
                 print("------------------------------")
@@ -307,7 +314,6 @@ LockFeat = function(keyname, callback)
             end
         end
     end
-    Save(true)
 end
 
 ----------------------------------------------------------------------------
