@@ -47,7 +47,7 @@ end
 ----------------------------------------------------------------------------
 
 -- Return the score, if it exists.
-GetFeatScore = function()
+GetTotalScore = function()
     Score:Load()
     return Score:GetValue("FeatsScore") or 0
 end
@@ -56,6 +56,75 @@ end
 GetFeats = function()
     Feats:Load()
     return Feats.persistdata
+end
+
+-- Return feat key names. This is virtually the same as above.
+GetFeatNames = function()
+    local feats = GetFeats()
+    local featnames = {}
+    for keyname,properties in pairs(feats) do
+        table.insert(featnames, keyname)
+    end
+
+    if debugging then
+        print("DEBUG-GETFEATNAMES")
+        for k,v in pairs(featnames) do
+            print(k)
+            print(v)
+        end
+    end
+
+    return featnames
+end
+
+-- Return feat name.
+GetFeatName = function(featname)
+    Feats:Load()
+
+    local feat = Feats:GetValue(featname)
+    local name = feat[1] 
+
+    return name
+end
+
+-- Return feat description.
+GetFeatDescription = function(featname)
+    Feats:Load()
+
+    local feat = Feats:GetValue(featname)
+    local description = feat[2] 
+
+    return description
+end
+
+-- Return feat locked status.
+GetFeatLocked = function(featname)
+    Feats:Load()
+
+    local feat = Feats:GetValue(featname)
+    local locked = feat[3] 
+
+    return locked
+end
+
+-- Return feat hidden status.
+GetFeatHidden = function(featname)
+    Feats:Load()
+
+    local feat = Feats:GetValue(featname)
+    local hidden = feat[4] 
+
+    return hidden
+end
+
+-- Return feat score value.
+GetFeatScore = function(featname)
+    Feats:Load()
+
+    local feat = Feats:GetValue(featname)
+    local score = feat[5]
+
+    return score 
 end
 
 ----------------------------------------------------------------------------
@@ -393,3 +462,13 @@ local function RabbitKillerFeat(inst)
 end
 
 AddPrefabPostInit("rabbit", RabbitKillerFeat)
+
+------------------------------------------------------------
+
+-- Dummy feats to test scrolling.
+AddFeat("Dummy0", "Dummy0", "This exists to test scrolling.")
+AddFeat("Dummy1", "Dummy1", "This exists to test scrolling.")
+AddFeat("Dummy2", "Dummy2", "This exists to test scrolling.")
+AddFeat("Dummy3", "Dummy3", "This exists to test scrolling.")
+AddFeat("Dummy4", "Dummy4", "This exists to test scrolling.")
+AddFeat("Dummy5", "Dummy5", "This exists to test scrolling.")

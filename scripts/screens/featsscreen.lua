@@ -27,9 +27,24 @@ local PopupDialogScreen = require "screens/popupdialog"
 local BigPopupDialogScreen = require "screens/bigpopupdialog"
 local MainScreen = require "screens/mainscreen"
 
+-- Number of feats per page.
+local display_rows = 5
+
 -- Create the feats screen.
 local FeatsScreen = Class(Screen, function(self, profile)
     Widget._ctor(self, "FeatsScreen")
+
+    -- Load and sort our feats.
+    if debugging then
+    	print("DEBUG-PROPEGATE-FEATS")
+    end
+
+    self.featnames = modenv:GetFeatNames()
+    self.feats = modenv:GetFeats()
+
+    -- Stuff for scrolling.
+    self.featwidgets = {}
+    self.option_offset = 0
 
     -- Set our background here.
     self.bg = self:AddChild(Image("images/ui.xml", "bg_plain.tex"))
@@ -94,11 +109,11 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.featscore:SetHAlign(ANCHOR_MIDDLE)
     self.featscore:SetPosition(mid_col, RESOLUTION_Y*0.23, 0)
     self.featscore:SetRegionSize(400, 70)
-    self.featscore:SetString("Total Score " .. modenv:GetFeatScore()) 
+    self.featscore:SetString("Total Score " .. modenv:GetTotalScore()) 
 
     -- Our feats menu/list.
     self.feats_list = self.feats_panel:AddChild(Menu({}, 60, false))
-    self.feats_list:SetPosition(0, -80, 0)
+    self.feats_list:SetPosition(0, -170, 0)
 
 	-------------------------------------------------------------------
 
@@ -119,23 +134,19 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
     ------------------------------
 
-    if debugging then
-        print("------------------------------")
-        print("DEBUG-FEATS")
-    end
+    -- Scrolling buttons.
 
-    local feats = modenv:GetFeats()
+	self.leftbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
+    self.leftbutton:SetPosition(0, 290, 0)
+	self.leftbutton:SetRotation(-90)
+    self.leftbutton:SetOnClick( function() self:Scroll(-display_rows) end)
+	
+	self.rightbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
+    self.rightbutton:SetPosition(0, -300, 0)
+	self.rightbutton:SetRotation(90)
+    self.rightbutton:SetOnClick( function() self:Scroll(display_rows) end)	
 
-    for keyname,properties in pairs(feats) do
-
-        if debugging then
-            print("------------------------------")
-            print("DEBUG-MENU")
-        end
-
-    	local tile = self:MakeFeatTile(keyname)
-        self.feats_list:AddCustomItem(tile, Vector3(0,0,0))
-    end
+	self:Scroll(0)
 
 end)
 
@@ -147,8 +158,7 @@ end
 function FeatsScreen:MakeFeatTile(keyname)
 
 	-- Load our feats data.
-  	local feats = modenv:GetFeats()
-  	local keyname = feats[keyname]
+  	local keyname = keyname or self.feats[keyname]
 
 	local name = keyname[1]
 	local description = keyname[2]
@@ -223,6 +233,67 @@ function FeatsScreen:MakeFeatTile(keyname)
     ------------------------------
 
     return feattile
+end
+
+function FeatsScreen:RefreshOptions()
+	if debugging then
+		print("DEBUG-REFRESH")
+	end
+
+	for k,v in pairs(self.featwidgets) do
+		v:Kill()
+	end
+	self.featwidgets = {}
+
+	self.feats_list:Clear()
+
+	local page_total = math.min(#self.featnames - self.option_offset, display_rows)
+	for k = 1, page_total do
+	
+		local idx = self.option_offset+k
+
+		local featkey = self.featnames[idx]
+
+		-- Load our feats data.
+	  	local keyname = self.feats[featkey]
+
+		local tile = self:MakeFeatTile(keyname)
+
+		self.feats_list:AddCustomItem(tile)
+
+		table.insert(self.featwidgets, tile)
+
+	end
+end
+
+function FeatsScreen:OnFirstPage()
+	return self.option_offset == 0
+end
+
+function FeatsScreen:OnLastPage()
+	return self.option_offset + display_rows >= #self.featnames
+end
+
+function FeatsScreen:Scroll(dir)
+	if (dir > 0 and (self.option_offset + display_rows) < #self.featnames) or
+		(dir < 0 and self.option_offset + dir >= 0) then
+	
+		self.option_offset = self.option_offset + dir
+	end
+	
+	self:RefreshOptions()
+
+	if self.option_offset > 0 then
+		self.leftbutton:Show()
+	else
+		self.leftbutton:Hide()
+	end
+	
+	if self.option_offset + display_rows < #self.featnames then
+		self.rightbutton:Show()
+	else
+		self.rightbutton:Hide()
+	end
 end
 
 return FeatsScreen
