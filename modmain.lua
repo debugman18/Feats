@@ -363,6 +363,7 @@ ResetAll = function()
     end
     Feats:Reset()
     Score:Reset()
+    Stats:Reset()
     Save(true)
 end
 
