@@ -84,7 +84,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
         print(tostring(hidden_a) .. "_" .. tostring(hidden_b))
 
         -- Put unlocked feats below/before locked feats.
-        if tostring(locked_b) > tostring(locked_a) then
+        if tostring(locked_b) < tostring(locked_a) then
 
             print("DEBUG-LOCKED-SORT")
 
@@ -92,16 +92,6 @@ local FeatsScreen = Class(Screen, function(self, profile)
             print(locked_b)
 
             return tostring(locked_b) < tostring(locked_a)
-
-        -- Put locked feats above/after hidden feats.
-        --elseif tostring(locked_a) < tostring(hidden_b) then
-
-            --print("DEBUG-COMPARE-SORT")
-
-            --print(hidden_a)
-            --print(locked_b)
-
-            --return tostring(locked_a) > tostring(hidden_b)
         
         -- Put unhidden feats above/after hidden feats.
         elseif tostring(hidden_b) < tostring(hidden_a) then

@@ -390,7 +390,7 @@ ResetAll = function()
 end
 
 -- Uncomment to reset everything.
-ResetAll()
+--ResetAll()
 
 ------------------------------------------------------------
 
@@ -504,9 +504,11 @@ AddPrefabPostInit("ancient_altar_broken", AltarProtyperFlag)
 
 ------------------------------------------------------------
 
+--[[
 AddFeat("Dummy0", "Dummy0", "This exists to test scrolling.", true, true)
 AddFeat("Dummy1", "Dummy1", "This exists to test scrolling.", true, true)
 AddFeat("Dummy2", "Dummy2", "This exists to test scrolling.", true, true)
 AddFeat("Dummy3", "Dummy3", "This exists to test scrolling.", true, false)
 AddFeat("Dummy4", "Dummy4", "This exists to test scrolling.", true, false)
 AddFeat("Dummy5", "Dummy5", "This exists to test scrolling.", true, false)
+--]]
