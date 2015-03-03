@@ -252,51 +252,87 @@ function FeatsScreen:MakeFeatTile(keyname)
 
     feattile.base = feattile:AddChild(ImageButton())
 
+    if not locked then
+        feattile.checkbox = feattile:AddChild(Image("images/ui.xml", "button_checkbox2.tex"))
+        feattile.checkbox:SetPosition(-110, 5, 0)
+        feattile.checkbox:SetScale(0.6,0.6,0.6)        
+    else
+        feattile.checkbox = feattile:AddChild(Image("images/ui.xml", "button_checkbox1.tex"))
+        feattile.checkbox:SetPosition(-110, 5, 0)
+        feattile.checkbox:SetScale(0.6,0.6,0.6)  
+    end
+
+    --[[
+    if not hidden then
+        feattile.featicon = feattile:AddChild(Image("images/ui.xml", "portrait_bg.tex"))
+        --feattile.featicon = feattile:AddChild(Image("images/feat_unknown.xml", "images/feat_" .. keyname .. ".tex"))--
+        feattile.featicon:SetPosition(-110, 3, 0)
+        feattile.featicon:SetScale(0.38,0.38,0.38)        
+    else
+        feattile.featicon = feattile:AddChild(Image("images/ui.xml", "portrait_bg.tex"))
+        --feattile.featicon = feattile:AddChild(Image("images/feat_unknown.xml", "images/feat_unknown.tex"))
+        feattile.featicon:SetPosition(-110, 3, 0)
+        feattile.featicon:SetScale(0.38,0.38,0.38)  
+    end   
+    ]] 
+
     -- Apply darkness to locked and/or hidden feats.
-    if hidden and locked then
+    if hidden and locked then     
         feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
-        feattile.black:SetScale(3,1.1,1)
+        feattile.black:SetScale(6,1.1,1)
         feattile.black:SetPosition(0,4.7,0)
         feattile.black:SetTint(0,0,0,.75)
         feattile.black:SetClickable(false)
-        feattile:Disable()
     elseif locked then
         feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
-        feattile.black:SetScale(3,1.1,1)
+        feattile.black:SetScale(6,1.1,1)
         feattile.black:SetPosition(0,4.7,0)
         feattile.black:SetTint(0,0,0,.75)
         feattile.black:SetClickable(false)
     end
 
     -- If it isn't hidden, allow us to see the details.
-    if not hidden then
-        feattile.base:SetOnClick(function()
-            if locked then
-                TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
-                "This feat is currently locked!\n" .. hint .. "\nScore Value: " .. score, 
+    feattile.base:SetOnClick(function()
+        if hidden and locked then
+
+            TheFrontEnd:PushScreen(BigPopupDialogScreen("????", "Fulfill this feat's qualifier to see it.", 
+            {
                 {
-                    {
-                    text = "OK", cb = function() TheFrontEnd:PopScreen() end
-                    }  
-                }))
-            else
-                TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
-                description .. "\nScore Value: " .. score, 
+                text = "OK", cb = function() TheFrontEnd:PopScreen() end
+                }  
+            }))
+
+        elseif locked then
+
+            TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
+            "This feat is currently locked!\n" .. hint .. "\nScore Value: " .. score, 
+            {
                 {
-                    {
-                    text = "OK", cb = function() TheFrontEnd:PopScreen() end
-                    }  
-                }))
-            end
-        end)
-    end
+                text = "OK", cb = function() TheFrontEnd:PopScreen() end
+                }  
+            }))
+
+        else
+
+            TheFrontEnd:PushScreen(BigPopupDialogScreen(name, 
+            description .. "\nScore Value: " .. score, 
+            {
+                {
+                text = "OK", cb = function() TheFrontEnd:PopScreen() end
+                }  
+            }))
+
+        end
+    end)
 
     feattile.feat_name = feattile:AddChild(Text(BUTTONFONT, 30))
+
     if not hidden then
         feattile.feat_name:SetString(name)
     else
         feattile.feat_name:SetString("????")
     end
+
     feattile.feat_name:SetColour(0,0,0,1)
 
     ------------------------------

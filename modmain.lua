@@ -340,7 +340,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
     local locked = locked or true
     local hidden = hidden or false
     local score = score or 0
-    local hint = hint or "Fulfill this feat's qualifier to see it."
+    local hint = hint or "Fulfill this feat's qualifier to unlock it."
 
     local feat = {name, description, locked, hidden, score, hint}
     local feat_exists = Feats:GetValue(keyname)
