@@ -337,7 +337,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
     GLOBAL.assert(keyname, "Added feats must have a unique identifier.")
     local name = name or "No Name"
     local description = description or "No Description"
-    local locked = locked or true
+    local locked = locked or false
     local hidden = hidden or false
     local score = score or 0
     local hint = hint or "Fulfill this feat's qualifier to unlock it."
@@ -390,7 +390,7 @@ ResetAll = function()
 end
 
 -- Uncomment to reset everything.
---ResetAll()
+ResetAll()
 
 ------------------------------------------------------------
 
@@ -438,8 +438,8 @@ AddPrefabPostInit("deerclops", DeerGutsFeat)
 
 ------------------------------------------------------------
 
--- Killed a rabbit or rabbits.
-AddFeat("RabbitKiller", "Hare Hunter", "Killed an innocent rabbit.", true, false, tiny_score, "Kill a rabbit to unlock this feat.")
+-- Killed one rabbit, or 100 rabbits.
+AddFeat("RabbitKiller", "Hare Hunter", "Killed your first rabbit.", true, false, tiny_score, "Kill a rabbit to unlock this feat.")
 AddFeat("RabbitKiller100", "Rabbit Eradicator", "Killed one-hundred rabbits!", true, true, med_score)
 
 local function RabbitKillerCheck(inst, deadthing, cause)
@@ -488,7 +488,41 @@ AddPrefabPostInit("rabbit", RabbitKillerFeat)
 
 ------------------------------------------------------------
 
-local altar_hint = "Look deep underground to unlock this feat!"
+-- Reached max science level.
+local max_science_hint = "Obtain some uncommon knowledge to unlock this feat."
+AddFeat("MaxSciencePrototyper", "Uncommon Knowledge", "Prototyped an item at the Alchemy Engine.", true, false, small_score, max_science_hint)
+
+local function MaxScienceProtyperFlag(inst)
+    local onactivate_cached = inst.components.prototyper.onactivate
+    inst.components.prototyper.onactivate = function()
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("MaxSciencePrototyper")
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("MaxMagicPrototyper", true)
+        onactivate_cached()
+    end
+end
+
+AddPrefabPostInit("researchlab2", MaxScienceProtyperFlag)
+
+------------------------------------------------------------
+
+-- Reached max magic level.
+local max_magic_hint = "Obtain some dark knowledge to unlock this feat."
+AddFeat("MaxMagicPrototyper", "Dark Knowledge", "Prototyped an item at the Prestihatitator.", true, true, med_score, max_magic_hint)
+
+local function MaxMagicProtyperFlag(inst)
+    local onactivate_cached = inst.components.prototyper.onactivate
+    inst.components.prototyper.onactivate = function()
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("MaxMagicPrototyper")
+        onactivate_cached()
+    end
+end
+
+AddPrefabPostInit("researchlab4", MaxMagicProtyperFlag)
+
+------------------------------------------------------------
+
+-- Reachec ancient level.
+local altar_hint = "Obtain some forgotten knowledge to unlock this feat."
 AddFeat("AltarPrototyper", "Cultist", "Prototyped an item at the Altar.", true, true, large_score, altar_hint)
 
 local function AltarProtyperFlag(inst)
@@ -504,11 +538,57 @@ AddPrefabPostInit("ancient_altar_broken", AltarProtyperFlag)
 
 ------------------------------------------------------------
 
---[[
-AddFeat("Dummy0", "Dummy0", "This exists to test scrolling.", true, true)
-AddFeat("Dummy1", "Dummy1", "This exists to test scrolling.", true, true)
-AddFeat("Dummy2", "Dummy2", "This exists to test scrolling.", true, true)
-AddFeat("Dummy3", "Dummy3", "This exists to test scrolling.", true, false)
-AddFeat("Dummy4", "Dummy4", "This exists to test scrolling.", true, false)
-AddFeat("Dummy5", "Dummy5", "This exists to test scrolling.", true, false)
---]]
+-- Hatching a tallbird.
+
+------------------------------------------------------------
+
+-- Shaving a beefalo.
+
+------------------------------------------------------------
+
+-- Dying from pengulls.
+
+------------------------------------------------------------
+
+-- Dying from hatched tallbird.
+
+------------------------------------------------------------
+
+-- Summon a Krampus.
+
+------------------------------------------------------------
+
+-- Kill an Ancient Guardian with an umbrella.
+
+------------------------------------------------------------
+
+-- A freebie.
+local welcome_description = "Thanks for downloading Feats!\n"
+AddFeat("Welcome", "Welcome!", welcome_description, false, false)
+
+------------------------------------------------------------
+
+-- Dummy feats for testing. Disable/enable as necessary.
+AddFeat("Dummy0", nil, nil, true, true)
+AddFeat("Dummy1", nil, nil, true, true)
+AddFeat("Dummy2", nil, nil, true, true)
+
+AddFeat("Dummy3", nil, nil, true, true)
+AddFeat("Dummy4", nil, nil, true, true)
+AddFeat("Dummy5", nil, nil, true, true)
+AddFeat("Dummy6", nil, nil, true, true)
+AddFeat("Dummy7", nil, nil, true, true)
+
+AddFeat("Dummy8", nil, nil, true, true)
+AddFeat("Dummy9", nil, nil, true, true)
+AddFeat("Dummy10", nil, nil, true, true)
+AddFeat("Dummy11", nil, nil, true, true)
+AddFeat("Dummy12", nil, nil, true, true)
+
+AddFeat("Dummy13", nil, nil, true, true)
+AddFeat("Dummy14", nil, nil, true, true)
+AddFeat("Dummy15", nil, nil, true, true)
+AddFeat("Dummy16", nil, nil, true, true)
+AddFeat("Dummy17", nil, nil, true, true)
+
+------------------------------------------------------------

@@ -35,6 +35,9 @@ local MainScreen = require "screens/mainscreen"
 
 -- Number of feats per page.
 local display_rows = 5
+local neat_mult = 4
+local to_beginning = neat_mult * display_rows
+local to_end = -to_beginning
 
 -- Create the feats screen.
 local FeatsScreen = Class(Screen, function(self, profile)
@@ -83,7 +86,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
         print("HIDDEN CHECK:")
         print(tostring(hidden_a) .. "_" .. tostring(hidden_b))
 
-        -- Put unlocked feats below/before locked feats.
+        -- Put unlocked feats above/before locked feats.
         if tostring(locked_b) < tostring(locked_a) then
 
             print("DEBUG-LOCKED-SORT")
@@ -93,7 +96,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
             return tostring(locked_b) < tostring(locked_a)
         
-        -- Put unhidden feats above/after hidden feats.
+        -- Put unhidden feats above/before hidden feats.
         elseif tostring(hidden_b) < tostring(hidden_a) then
 
             print("DEBUG-HIDDEN-SORT")
@@ -179,7 +182,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.featscore:SetString("Total Score " .. modenv:GetTotalScore()) 
 
     -- Our feats menu/list.
-    self.feats_list = self.feats_panel:AddChild(Menu({}, 60, false))
+    self.feats_list = self.feats_panel:AddChild(Menu({}, 75, false))
     self.feats_list:SetPosition(0, -200, 0)
 
 	-------------------------------------------------------------------
@@ -203,17 +206,16 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
     -- Scrolling buttons.
 
-	self.upbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
-    self.upbutton:SetPosition(0, 110, 0)
-	self.upbutton:SetRotation(-90)
-    self.upbutton:SetOnClick( function() self:Scroll(display_rows) end)
+	self.leftbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
+    self.leftbutton:SetPosition(-180, -20, 0)
+	self.leftbutton:SetRotation(-180)
+    self.leftbutton:SetOnClick(function() self:Scroll(display_rows) end)
 	
-	self.downbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
-    self.downbutton:SetPosition(0, -265, 0)
-	self.downbutton:SetRotation(90)
-    self.downbutton:SetOnClick( function() self:Scroll(-display_rows) end)	
+	self.rightbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
+    self.rightbutton:SetPosition(180, -20, 0)
+	self.rightbutton:SetRotation(0)
 
-	self:Scroll(self.option_offset + display_rows)
+	self:Scroll(to_beginning)
 
 end)
 
@@ -250,8 +252,11 @@ function FeatsScreen:MakeFeatTile(keyname)
     -- Feat button.
     local feattile = Widget("AnimButton")
 
-    feattile.base = feattile:AddChild(ImageButton())
 
+    feattile.base = feattile:AddChild(ImageButton("images/ui.xml", "nondefault_customization.tex"))
+
+    -- Checkboxes. Meh.
+    --[[
     if not locked then
         feattile.checkbox = feattile:AddChild(Image("images/ui.xml", "button_checkbox2.tex"))
         feattile.checkbox:SetPosition(-110, 5, 0)
@@ -261,15 +266,17 @@ function FeatsScreen:MakeFeatTile(keyname)
         feattile.checkbox:SetPosition(-110, 5, 0)
         feattile.checkbox:SetScale(0.6,0.6,0.6)  
     end
+    --]]
 
+    -- Icons. Meh.
     --[[
     if not hidden then
-        feattile.featicon = feattile:AddChild(Image("images/ui.xml", "portrait_bg.tex"))
+        feattile.featicon = feattile:AddChild(Image("images/saveslot_portraits.xml", "background.tex"))
         --feattile.featicon = feattile:AddChild(Image("images/feat_unknown.xml", "images/feat_" .. keyname .. ".tex"))--
         feattile.featicon:SetPosition(-110, 3, 0)
         feattile.featicon:SetScale(0.38,0.38,0.38)        
     else
-        feattile.featicon = feattile:AddChild(Image("images/ui.xml", "portrait_bg.tex"))
+        feattile.featicon = feattile:AddChild(Image("images/saveslot_portraits.xml", "background.tex"))
         --feattile.featicon = feattile:AddChild(Image("images/feat_unknown.xml", "images/feat_unknown.tex"))
         feattile.featicon:SetPosition(-110, 3, 0)
         feattile.featicon:SetScale(0.38,0.38,0.38)  
@@ -279,14 +286,14 @@ function FeatsScreen:MakeFeatTile(keyname)
     -- Apply darkness to locked and/or hidden feats.
     if hidden and locked then     
         feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
-        feattile.black:SetScale(6,1.1,1)
-        feattile.black:SetPosition(0,4.7,0)
+        feattile.black:SetScale(6,1.5,1)
+        feattile.black:SetPosition(0,4.3,0)
         feattile.black:SetTint(0,0,0,.75)
         feattile.black:SetClickable(false)
     elseif locked then
         feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
-        feattile.black:SetScale(6,1.1,1)
-        feattile.black:SetPosition(0,4.7,0)
+        feattile.black:SetScale(6,1.5,1)
+        feattile.black:SetPosition(0,4.3,0)
         feattile.black:SetTint(0,0,0,.75)
         feattile.black:SetClickable(false)
     end
@@ -391,15 +398,15 @@ function FeatsScreen:Scroll(dir)
     self:RefreshOptions()
 
     if self.option_offset + display_rows < #self.featnames then
-        self.upbutton:Show()
+        self.leftbutton:SetOnClick(function() self:Scroll(display_rows) end)
     else
-        self.upbutton:Hide()
+        self.leftbutton:SetOnClick(function() self:Scroll(to_end) end)
     end
     
     if self.option_offset > 0 then
-        self.downbutton:Show()
+        self.rightbutton:SetOnClick(function() self:Scroll(-display_rows) end) 
     else
-        self.downbutton:Hide()
+        self.rightbutton:SetOnClick(function() self:Scroll(to_beginning) end) 
     end    
 end
 
