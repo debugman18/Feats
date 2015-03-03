@@ -6,8 +6,15 @@ local require = GLOBAL.require
 GLOBAL.package.loaded["feats.modenv"] = env
 
 -- Debugging config stuff.
-local debugging = GetModConfigData("debugprint") or false
-print("Debugging is " .. tostring(debugging))
+local debugging = function() 
+    if modenv.GetModConfigData("debugprint") == true then
+        print("Debugging is true.")
+        return true
+    else
+        print("Debugging is false.")
+        return nil  
+    end
+end
 
 -- Screen stuff.
 require "prefabutil"
@@ -383,7 +390,7 @@ ResetAll = function()
 end
 
 -- Uncomment to reset everything.
---ResetAll()
+ResetAll()
 
 ------------------------------------------------------------
 

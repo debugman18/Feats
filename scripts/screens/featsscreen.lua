@@ -4,9 +4,15 @@
 local modenv = require "feats.modenv"
 
 -- Debugging config stuff.
-local debugging = modenv.GetModConfigData("debugprint") or false
-print("Debugging is " .. tostring(debugging))
-
+local debugging = function() 
+    if modenv.GetModConfigData("debugprint") == true then
+        print("Debugging is true.")
+        return true
+    else
+        print("Debugging is false.")
+        return nil  
+    end
+end
 -- PersistentData module stuff.
 local PersistentData = require "persistentdata"
 local Feats = PersistentData("FeatsData")
@@ -51,18 +57,62 @@ local FeatsScreen = Class(Screen, function(self, profile)
     end
 
     table.sort(self.featnames, function(a,b)
+
         local feat_a = self.feats[a]
+
+        print(feat_a[1])
+        print(feat_a[3])
+        print(feat_a[4])
+
         local locked_a = feat_a[3]
         local hidden_a = feat_a[4]
 
         local feat_b = self.feats[b]
+
+        print(feat_b[1])
+        print(feat_b[3])
+        print(feat_b[4])
+
         local locked_b = feat_b[3]
         local hidden_b = feat_b[4]
 
-        if tostring(locked_a) > tostring(locked_b) then
-            return tostring(locked_a) < tostring(locked_b)
-        elseif tostring(hidden_b) > tostring(locked_a) then
-            return tostring(hidden_b) > tostring(locked_a)
+        print("LOCKED_CHECK:")
+        print(tostring(locked_a) .. "_" .. tostring(locked_b))
+        print("COMPARE CHECK:")
+        print(tostring(hidden_a) .. "_" .. tostring(locked_b))
+        print("HIDDEN CHECK:")
+        print(tostring(hidden_a) .. "_" .. tostring(hidden_b))
+
+        -- Put unlocked feats below/before locked feats.
+        if tostring(locked_b) > tostring(locked_a) then
+
+            print("DEBUG-LOCKED-SORT")
+
+            print(locked_a)
+            print(locked_b)
+
+            return tostring(locked_b) < tostring(locked_a)
+
+        -- Put locked feats above/after hidden feats.
+        --elseif tostring(locked_a) < tostring(hidden_b) then
+
+            --print("DEBUG-COMPARE-SORT")
+
+            --print(hidden_a)
+            --print(locked_b)
+
+            --return tostring(locked_a) > tostring(hidden_b)
+        
+        -- Put unhidden feats above/after hidden feats.
+        elseif tostring(hidden_b) < tostring(hidden_a) then
+
+            print("DEBUG-HIDDEN-SORT")
+
+            print(hidden_a)
+            print(hidden_b)
+
+            return tostring(hidden_b) < tostring(hidden_a)
+
         end 
 
     end)
@@ -163,17 +213,17 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
     -- Scrolling buttons.
 
-	self.leftbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
-    self.leftbutton:SetPosition(0, 110, 0)
-	self.leftbutton:SetRotation(-90)
-    self.leftbutton:SetOnClick( function() self:Scroll(-display_rows) end)
+	self.upbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
+    self.upbutton:SetPosition(0, 110, 0)
+	self.upbutton:SetRotation(-90)
+    self.upbutton:SetOnClick( function() self:Scroll(display_rows) end)
 	
-	self.rightbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
-    self.rightbutton:SetPosition(0, -265, 0)
-	self.rightbutton:SetRotation(90)
-    self.rightbutton:SetOnClick( function() self:Scroll(display_rows) end)	
+	self.downbutton = self.feats_panel:AddChild(ImageButton("images/ui.xml", "scroll_arrow.tex", "scroll_arrow_over.tex", "scroll_arrow_disabled.tex"))
+    self.downbutton:SetPosition(0, -265, 0)
+	self.downbutton:SetRotation(90)
+    self.downbutton:SetOnClick( function() self:Scroll(-display_rows) end)	
 
-	self:Scroll(0)
+	self:Scroll(self.option_offset + display_rows)
 
 end)
 
@@ -215,15 +265,15 @@ function FeatsScreen:MakeFeatTile(keyname)
     -- Apply darkness to locked and/or hidden feats.
     if hidden and locked then
         feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
-        feattile.black:SetScale(3,1.2,1)
-        feattile.black:SetPosition(0,5,0)
+        feattile.black:SetScale(3,1.1,1)
+        feattile.black:SetPosition(0,4.7,0)
         feattile.black:SetTint(0,0,0,.75)
         feattile.black:SetClickable(false)
         feattile:Disable()
     elseif locked then
         feattile.black = feattile:AddChild(Image("images/global.xml", "square.tex"))
-        feattile.black:SetScale(3,1.2,1)
-        feattile.black:SetPosition(0,5,0)
+        feattile.black:SetScale(3,1.1,1)
+        feattile.black:SetPosition(0,4.7,0)
         feattile.black:SetTint(0,0,0,.75)
         feattile.black:SetClickable(false)
     end
@@ -265,6 +315,7 @@ function FeatsScreen:MakeFeatTile(keyname)
 end
 
 function FeatsScreen:RefreshOptions()
+
 	if debugging then
         print("------------------------------")
 		print("DEBUG-REFRESH")
@@ -305,25 +356,25 @@ function FeatsScreen:OnLastPage()
 end
 
 function FeatsScreen:Scroll(dir)
-	if (dir > 0 and (self.option_offset + display_rows) < #self.featnames) or
-		(dir < 0 and self.option_offset + dir >= 0) then
-	
-		self.option_offset = self.option_offset + dir
-	end
-	
-	self:RefreshOptions()
+    if (dir > 0 and (self.option_offset + display_rows) < #self.featnames) or
+        (dir < 0 and self.option_offset + dir >= 0) then
+    
+        self.option_offset = self.option_offset + dir
+    end
+    
+    self:RefreshOptions()
 
-	if self.option_offset > 0 then
-		self.leftbutton:Show()
-	else
-		self.leftbutton:Hide()
-	end
-	
-	if self.option_offset + display_rows < #self.featnames then
-		self.rightbutton:Show()
-	else
-		self.rightbutton:Hide()
-	end
+    if self.option_offset + display_rows < #self.featnames then
+        self.upbutton:Show()
+    else
+        self.upbutton:Hide()
+    end
+    
+    if self.option_offset > 0 then
+        self.downbutton:Show()
+    else
+        self.downbutton:Hide()
+    end    
 end
 
 return FeatsScreen
