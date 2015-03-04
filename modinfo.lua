@@ -1,7 +1,7 @@
 name = 'Feats of the World'
 description = 'Feats for you to achieve!'
 author = 'debugman18'
-version = "1.0"
+version = "1.1"
 forumthread = "19505-Modders-Your-new-friend-at-Klei!"
 api_version = 6
 dont_starve_compatible = true

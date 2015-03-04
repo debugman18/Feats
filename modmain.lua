@@ -223,6 +223,60 @@ end
 
 ----------------------------------------------------------------------------
 
+-- Refresh the description, name, score, and hint of a feat.
+-- 1, 2, 5, 6
+RefreshFeat = function(keyname, name, description, score, hint)
+
+    Feats:Load()
+
+    local feat_cached = Feats:GetValue(keyname)
+
+    if debugging then
+        print("---------------------------")
+        print("DEBUG-REFRESH")
+        print(keyname)
+    end
+
+    for propertykey,value in ipairs(Feats:GetValue(keyname)) do
+
+        if propertykey == 1 then
+            feat_cached[1] = name
+            if debugging then
+                print(name)
+                print(Feats:GetValue(keyname)[1])
+            end
+        end
+
+        if propertykey == 2 then
+            feat_cached[2] = description
+            if debugging then
+                print(description)
+                print(Feats:GetValue(keyname)[2])
+            end
+        end
+
+        if propertykey == 5 then
+            feat_cached[5] = score
+            if debugging then
+                print(score)
+                print(Feats:GetValue(keyname)[5])
+            end
+        end
+
+        if propertykey == 6 then
+            feat_cached[6] = hint
+            if debugging then
+                print(hint)
+                print(Feats:GetValue(keyname)[6])
+            end
+        end
+    end
+
+    Feats:SetValue(keyname, feat_cached)
+end
+
+----------------------------------------------------------------------------
+
 -- Unlock an arbitary feat.
 UnlockFeat = function(keyname, callback)
     Load()
@@ -339,6 +393,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
         print("------------------------------")
         print("DEBUG-REDUNDANCY")
     end
+
     if not feat_exists then
         if debugging then
             print("------------------------------")
@@ -355,9 +410,13 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
         Save()
         -- Let's assure that we saved.
         print(Feats:GetValue(keyname))
-    elseif debugging then
-        print("------------------------------")
-        print("Feat " .. "\"" .. name .. "\"" .. " already exists. Skipping...")
+    else
+        if debugging then
+            print("------------------------------")
+            print("Feat " .. "\"" .. name .. "\"" .. " already exists. Refreshing...")
+        end
+        RefreshFeat(keyname, name, description, score, hint)
+        Save()
     end
 end
 
@@ -656,8 +715,8 @@ AddFeat("Welcome", "Welcome!", welcome_description, false, false)
 ------------------------------------------------------------
 
 -- The Accomploshrine should show feats in-game.
-local meta_description = "Thanks for downloading Feats!\n"
-AddFeat("MetaFeat", "Feat-ception", meta_description, true, false, tiny_score, "Build an accomplishment shrine to unlock this feat.")
+local meta_description = "You built an Accomploshrine! Check out your feats in-game!"
+AddFeat("MetaFeat", "Feat-Ception", meta_description, true, false, tiny_score, "Build an accomplishment shrine to unlock this feat.")
 
 local function AppendAccomploshrine(inst)
     inst:ListenForEvent("onbuilt", function()

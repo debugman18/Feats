@@ -375,7 +375,7 @@ function FeatsScreen:RefreshOptions()
 
 	if debugging then
         print("------------------------------")
-		print("DEBUG-REFRESH")
+		print("DEBUG-SCREEN-LOAD")
 	end
 
 	for k,v in pairs(self.featwidgets) do
