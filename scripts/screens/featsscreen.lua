@@ -66,18 +66,22 @@ local FeatsScreen = Class(Screen, function(self, profile)
         print(feat_a[1])
         print(feat_a[3])
         print(feat_a[4])
+        print(feat_a[5])
 
         local locked_a = feat_a[3]
         local hidden_a = feat_a[4]
+        local score_a = feat_a[5]
 
         local feat_b = self.feats[b]
 
         print(feat_b[1])
         print(feat_b[3])
         print(feat_b[4])
+        print(feat_b[5])
 
         local locked_b = feat_b[3]
         local hidden_b = feat_b[4]
+        local score_b = feat_b[5]
 
         print("LOCKED_CHECK:")
         print(tostring(locked_a) .. "_" .. tostring(locked_b))
@@ -85,6 +89,8 @@ local FeatsScreen = Class(Screen, function(self, profile)
         print(tostring(hidden_a) .. "_" .. tostring(locked_b))
         print("HIDDEN CHECK:")
         print(tostring(hidden_a) .. "_" .. tostring(hidden_b))
+        print("SCORE CHECK:")
+        print(tostring(score_a) .. "_" .. tostring(score_b))
 
         -- Put unlocked feats above/before locked feats.
         if tostring(locked_b) < tostring(locked_a) then
@@ -105,6 +111,16 @@ local FeatsScreen = Class(Screen, function(self, profile)
             print(hidden_b)
 
             return tostring(hidden_b) < tostring(hidden_a)
+
+        -- Finally, sort by score value.
+        elseif (not locked_a) and (not locked_b) and score_b < score_a then
+
+            print("DEBUG-SCORE-SORT")
+
+            print(score_a)
+            print(score_b)
+
+            return score_b < score_a          
 
         end 
 

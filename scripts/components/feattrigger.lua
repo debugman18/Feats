@@ -23,5 +23,10 @@ function FeatTrigger:Untrigger(keyname, onlyhide, callback)
     end
 end
 
+-- Unlock all feats.
+function FeatTrigger:TriggerAll()
+    modenv.UnlockAllFeats()
+end
+
 return FeatTrigger
 

@@ -370,6 +370,16 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
     end
 end
 
+----------------------------------------------------------------------------
+
+-- Unlock all feats.
+UnlockAllFeats = function()
+    for k,v in pairs(GetFeats()) do
+        UnlockFeat(k)
+    end
+    TheFrontEnd:ShowTitle("You unlocked all Feats",subtitle)
+end
+
 ------------------------------------------------------------
 
 -- Load before we add feats, so we can do a redundancy check.
@@ -390,7 +400,7 @@ ResetAll = function()
 end
 
 -- Uncomment to reset everything.
-ResetAll()
+--ResetAll()
 
 ------------------------------------------------------------
 
@@ -507,7 +517,7 @@ AddPrefabPostInit("researchlab2", MaxScienceProtyperFlag)
 
 -- Reached max magic level.
 local max_magic_hint = "Obtain some dark knowledge to unlock this feat."
-AddFeat("MaxMagicPrototyper", "Dark Knowledge", "Prototyped an item at the Prestihatitator.", true, true, med_score, max_magic_hint)
+AddFeat("MaxMagicPrototyper", "Dark Knowledge", "Prototyped an item at the Shadow Manipulator.", true, true, med_score, max_magic_hint)
 
 local function MaxMagicProtyperFlag(inst)
     local onactivate_cached = inst.components.prototyper.onactivate
@@ -517,13 +527,12 @@ local function MaxMagicProtyperFlag(inst)
     end
 end
 
-AddPrefabPostInit("researchlab4", MaxMagicProtyperFlag)
+AddPrefabPostInit("researchlab3", MaxMagicProtyperFlag)
 
 ------------------------------------------------------------
 
--- Reachec ancient level.
-local altar_hint = "Obtain some forgotten knowledge to unlock this feat."
-AddFeat("AltarPrototyper", "Cultist", "Prototyped an item at the Altar.", true, true, large_score, altar_hint)
+-- Reached ancient level.
+AddFeat("AltarPrototyper", "Forgotten Knowledge", "Prototyped an item at the Altar.", true, true, large_score)
 
 local function AltarProtyperFlag(inst)
     local onactivate_cached = inst.components.prototyper.onactivate
@@ -539,6 +548,21 @@ AddPrefabPostInit("ancient_altar_broken", AltarProtyperFlag)
 ------------------------------------------------------------
 
 -- Hatching a tallbird.
+local egg_hint = "Hatch an egg to unlock this feat."
+AddFeat("TallBirdHatcher", "Almost Food", "Hatched an egg into a Smallbird.", true, false, small_score, egg_hint)
+
+local function TallBirdEggFlag(inst)
+    local onstate_cached = inst.components.hatchable.onstatefn
+    inst.components.hatchable:SetOnState(function(inst, state)
+        print(state)
+        if state == "hatch" then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("TallBirdHatcher")
+        end
+        onstate_cached(inst, state)
+    end)
+end
+
+AddPrefabPostInit("tallbirdegg_cracked", TallBirdEggFlag)
 
 ------------------------------------------------------------
 
@@ -547,18 +571,90 @@ AddPrefabPostInit("ancient_altar_broken", AltarProtyperFlag)
 ------------------------------------------------------------
 
 -- Dying from pengulls.
+AddFeat("PenguinVictim", "Pengull Chow", "Got killed by a pengull.", true, true, small_score)
+
+local function PengullKillerCheck(inst, deadthing, cause)
+    if inst == deadthing then
+        if cause == "penguin" then
+            inst.components.feattrigger:Trigger("PenguinVictim")
+        end
+    end
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+        GLOBAL.GetWorld():ListenForEvent("entity_death", function(world, data) PengullKillerCheck(inst, data.inst, data.cause) end)
+    end
+end)
 
 ------------------------------------------------------------
 
--- Dying from hatched tallbird.
+-- Dying from hatched teenbird.
+AddFeat("TeenbirdVictim", "Et tu, Brute?", "Got killed by your old friend.", true, true, med_score)
+
+local function TeenbirdKillerCheck(inst, deadthing, cause)
+    if inst == deadthing then
+        if cause == "teenbird" then
+            inst.components.feattrigger:Trigger("TeenbirdVictim")
+        end
+    end
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+        GLOBAL.GetWorld():ListenForEvent("entity_death", function(world, data) TeenbirdKillerCheck(inst, data.inst, data.cause) end)
+    end
+end)
 
 ------------------------------------------------------------
 
 -- Summon a Krampus.
+AddFeat("KrampusVictim", "Naughty, Not Nice", "You were naughty enough to summon Krampus.", true, true, med_score)
+
+local function KrampusFlag(component)
+    local naughty_action = component.OnNaughtyAction
+    component.OnNaughtyAction = function(self, how_naughty)
+        if self.threshold == nil then
+            self.threshold = TUNING.KRAMPUS_THRESHOLD + math.random(TUNING.KRAMPUS_THRESHOLD_VARIANCE)
+        end
+        local actions = self.actions + (how_naughty or 1)
+        if actions >= self.threshold and self.threshold > 0 then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("KrampusVictim")
+        end
+        naughty_action(self, how_naughty)
+    end
+end
+
+AddComponentPostInit("kramped", KrampusFlag)
 
 ------------------------------------------------------------
 
 -- Kill an Ancient Guardian with an umbrella.
+AddFeat("ShadyMinotaur", "Shady Guardian", "Killed the Ancient Guardian with... an umbrella.", true, true, huge_score)
+
+local function ShadyMinotaurCheck(inst, deadthing, cause)
+    if debugging then
+        print("------------------------------")
+        print("SHADYMINOTAURCHECK")
+        print(tostring(inst))
+        print(tostring(deadthing))
+        if cause then
+            print("Killer: " .. cause)
+        end
+        print("Player: " .. GLOBAL.GetPlayer().prefab)
+    end
+    if GLOBAL.GetPlayer().prefab == cause then
+        if GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS) and GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS.prefab) == "umbrella" or "grass_umbrella" then
+            GLOBAL.GetPlayer().components.feattrigger:Trigger("ShadyMinotaur")
+        end
+    end 
+end
+
+local function ShadyMinotaurFeat(inst)
+    inst:ListenForEvent("death", function(inst, data) ShadyMinotaurCheck(inst, data.inst, data.cause) end)
+end
+
+AddPrefabPostInit("minotaur", ShadyMinotaurFeat)
 
 ------------------------------------------------------------
 
@@ -585,10 +681,10 @@ AddFeat("Dummy10", nil, nil, true, true)
 AddFeat("Dummy11", nil, nil, true, true)
 AddFeat("Dummy12", nil, nil, true, true)
 
-AddFeat("Dummy13", nil, nil, true, true)
-AddFeat("Dummy14", nil, nil, true, true)
-AddFeat("Dummy15", nil, nil, true, true)
-AddFeat("Dummy16", nil, nil, true, true)
-AddFeat("Dummy17", nil, nil, true, true)
+--AddFeat("Dummy13", nil, nil, true, true)
+--AddFeat("Dummy14", nil, nil, true, true)
+--AddFeat("Dummy15", nil, nil, true, true)
+--AddFeat("Dummy16", nil, nil, true, true)
+--AddFeat("Dummy17", nil, nil, true, true)
 
 ------------------------------------------------------------
