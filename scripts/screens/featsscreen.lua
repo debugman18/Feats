@@ -4,15 +4,8 @@
 local modenv = require "feats.modenv"
 
 -- Debugging config stuff.
-local debugging = function() 
-    if modenv.GetModConfigData("debugprint") == true then
-        print("Debugging is true.")
-        return true
-    else
-        print("Debugging is false.")
-        return nil  
-    end
-end
+local debugging = modenv.GetModConfigData("debugprint")
+
 -- PersistentData module stuff.
 local PersistentData = require "persistentdata"
 local Feats = PersistentData("FeatsData")
@@ -63,10 +56,12 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
         local feat_a = self.feats[a]
 
-        print(feat_a[1])
-        print(feat_a[3])
-        print(feat_a[4])
-        print(feat_a[5])
+        if debugging then
+            print(feat_a[1])
+            print(feat_a[3])
+            print(feat_a[4])
+            print(feat_a[5])
+        end
 
         local locked_a = feat_a[3]
         local hidden_a = feat_a[4]
@@ -74,51 +69,61 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
         local feat_b = self.feats[b]
 
-        print(feat_b[1])
-        print(feat_b[3])
-        print(feat_b[4])
-        print(feat_b[5])
+        if debugging then
+            print(feat_b[1])
+            print(feat_b[3])
+            print(feat_b[4])
+            print(feat_b[5])
+        end
 
         local locked_b = feat_b[3]
         local hidden_b = feat_b[4]
         local score_b = feat_b[5]
 
-        print("LOCKED_CHECK:")
-        print(tostring(locked_a) .. "_" .. tostring(locked_b))
-        print("COMPARE CHECK:")
-        print(tostring(hidden_a) .. "_" .. tostring(locked_b))
-        print("HIDDEN CHECK:")
-        print(tostring(hidden_a) .. "_" .. tostring(hidden_b))
-        print("SCORE CHECK:")
-        print(tostring(score_a) .. "_" .. tostring(score_b))
+        if debugging then
+            print("LOCKED_CHECK:")
+            print(tostring(locked_a) .. "_" .. tostring(locked_b))
+            print("COMPARE CHECK:")
+            print(tostring(hidden_a) .. "_" .. tostring(locked_b))
+            print("HIDDEN CHECK:")
+            print(tostring(hidden_a) .. "_" .. tostring(hidden_b))
+            print("SCORE CHECK:")
+            print(tostring(score_a) .. "_" .. tostring(score_b))
+        end
 
         -- Put unlocked feats above/before locked feats.
         if tostring(locked_b) < tostring(locked_a) then
 
-            print("DEBUG-LOCKED-SORT")
+            if debugging then
+                print("DEBUG-LOCKED-SORT")
 
-            print(locked_a)
-            print(locked_b)
+                print(locked_a)
+                print(locked_b)
+            end
 
             return tostring(locked_b) < tostring(locked_a)
         
         -- Put unhidden feats above/before hidden feats.
         elseif tostring(hidden_b) < tostring(hidden_a) then
 
-            print("DEBUG-HIDDEN-SORT")
+            if debugging then
+                print("DEBUG-HIDDEN-SORT")
 
-            print(hidden_a)
-            print(hidden_b)
+                print(hidden_a)
+                print(hidden_b)
+            end
 
             return tostring(hidden_b) < tostring(hidden_a)
 
         -- Finally, sort by score value.
         elseif (not locked_a) and (not locked_b) and score_b < score_a then
 
-            print("DEBUG-SCORE-SORT")
+            if debugging then
+                print("DEBUG-SCORE-SORT")
 
-            print(score_a)
-            print(score_b)
+                print(score_a)
+                print(score_b)
+            end
 
             return score_b < score_a          
 
@@ -133,6 +138,8 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.option_offset = 0
 
     -- Set our background here.
+    -- We don't really need this, I think.
+    --[[
     self.bg = self:AddChild(Image("images/ui.xml", "bg_plain.tex"))
     if IsDLCEnabled(REIGN_OF_GIANTS) then
    	    self.bg:SetTint(BGCOLOURS.PURPLE[1],BGCOLOURS.PURPLE[2],BGCOLOURS.PURPLE[3], 1)
@@ -145,6 +152,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
     self.bg:SetVAnchor(ANCHOR_MIDDLE)
     self.bg:SetHAnchor(ANCHOR_MIDDLE)
     self.bg:SetScaleMode(SCALEMODE_FILLSCREEN)
+    --]]
 
     -------------------------------------------------------------------
 

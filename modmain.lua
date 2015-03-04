@@ -1,20 +1,11 @@
 -- Convenience.
---GLOBAL.setmetatable(env, {__index=GLOBAL})
 local require = GLOBAL.require
 
 -- Export our modenv.
 GLOBAL.package.loaded["feats.modenv"] = env
 
 -- Debugging config stuff.
-local debugging = function() 
-    if modenv.GetModConfigData("debugprint") == true then
-        print("Debugging is true.")
-        return true
-    else
-        print("Debugging is false.")
-        return nil  
-    end
-end
+debugging = GetModConfigData("debugprint")
 
 -- Screen stuff.
 require "prefabutil"
@@ -664,6 +655,38 @@ AddFeat("Welcome", "Welcome!", welcome_description, false, false)
 
 ------------------------------------------------------------
 
+-- The Accomploshrine should show feats in-game.
+local meta_description = "Thanks for downloading Feats!\n"
+AddFeat("MetaFeat", "Feat-ception", meta_description, true, false, tiny_score, "Build an accomplishment shrine to unlock this feat.")
+
+local function AppendAccomploshrine(inst)
+    inst:ListenForEvent("onbuilt", function()
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("MetaFeat")
+    end)
+    inst.components.activatable.getverb = function() return "CHECK" end
+    inst.components.activatable.OnActivate = function(inst)
+        FeatsOpen()
+        inst.components.activatable.inactive = true
+    end
+end
+
+AddPrefabPostInit("accomplishment_shrine", AppendAccomploshrine)
+
+GLOBAL.Recipe("accomplishment_shrine", 
+
+    {
+        GLOBAL.Ingredient("goldnugget", 10), 
+        GLOBAL.Ingredient("cutstone", 1), 
+        GLOBAL.Ingredient("gears", 6)
+    }, 
+
+    GLOBAL.RECIPETABS.SCIENCE, 
+    GLOBAL.TECH.SCIENCE_TWO, 
+
+"accomplishment_shrine_placer")
+
+------------------------------------------------------------
+
 -- Dummy feats for testing. Disable/enable as necessary.
 AddFeat("Dummy0", nil, nil, true, true)
 AddFeat("Dummy1", nil, nil, true, true)
@@ -679,7 +702,7 @@ AddFeat("Dummy8", nil, nil, true, true)
 AddFeat("Dummy9", nil, nil, true, true)
 AddFeat("Dummy10", nil, nil, true, true)
 AddFeat("Dummy11", nil, nil, true, true)
-AddFeat("Dummy12", nil, nil, true, true)
+--AddFeat("Dummy12", nil, nil, true, true)
 
 --AddFeat("Dummy13", nil, nil, true, true)
 --AddFeat("Dummy14", nil, nil, true, true)

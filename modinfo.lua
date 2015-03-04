@@ -1,11 +1,13 @@
 name = 'Feats of the World'
 description = 'Feats for you to achieve!'
 author = 'debugman18'
-version = "0.5"
+version = "1.0"
 forumthread = "19505-Modders-Your-new-friend-at-Klei!"
 api_version = 6
 dont_starve_compatible = true
 reign_of_giants_compatible = true
+icon_atlas = "Feats.xml"
+icon = "Feats.tex"
 
 configuration_options =
 {
@@ -14,9 +16,9 @@ configuration_options =
         label = "Debugging",
 		options = 
 		{
-			{description = "Enabled", data = "true"}, 
-			{description = "Disabled", data = "false"}
+			{description = "Enabled", data = true}, 
+			{description = "Disabled", data = false}
 		}, 
-		default = "true",
+		default = false,
 	}
 }
