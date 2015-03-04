@@ -34,6 +34,11 @@ local to_end = -to_beginning
 
 -- Create the feats screen.
 local FeatsScreen = Class(Screen, function(self, profile)
+
+    if GetWorld() then
+        SetPause(true)
+    end
+
     Widget._ctor(self, "FeatsScreen")
 
     -- Load and sort our feats.
@@ -66,6 +71,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
         local locked_a = feat_a[3]
         local hidden_a = feat_a[4]
         local score_a = feat_a[5]
+        local name_a = feat_a[1]
 
         local feat_b = self.feats[b]
 
@@ -79,6 +85,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
         local locked_b = feat_b[3]
         local hidden_b = feat_b[4]
         local score_b = feat_b[5]
+        local name_b = feat_b[1]
 
         if debugging then
             print("LOCKED_CHECK:")
@@ -115,7 +122,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
             return tostring(hidden_b) < tostring(hidden_a)
 
-        -- Finally, sort by score value.
+        -- Then, sort by score value.
         elseif (not locked_a) and (not locked_b) and score_b < score_a then
 
             if debugging then
@@ -244,6 +251,7 @@ local FeatsScreen = Class(Screen, function(self, profile)
 end)
 
 function FeatsScreen:Return()
+    SetPause(false)
 	TheFrontEnd:PopScreen()
 end
 

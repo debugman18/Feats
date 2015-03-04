@@ -82,6 +82,22 @@ GetFeatNames = function()
     return featnames
 end
 
+-- Returns the maximum possible score.
+GetMaxScore = function ()
+
+    local maxscore = 0
+
+    for keyname,properties in pairs(GetFeats()) do
+        local feat_score = properties[5]
+        maxscore = maxscore + feat_score
+    end
+
+    return maxscore
+
+end
+
+----------------------------------------------------------------------------
+
 -- Return feat name.
 GetFeatName = function(featname)
     Feats:Load()
@@ -295,6 +311,9 @@ UnlockFeat = function(keyname, callback)
                 -- Notify the player.
                 local title = "You accomplished a new feat!\n" .. "\"" .. Feats:GetValue(keyname)[1] .. "\""
                 TheFrontEnd:ShowTitle(title,subtitle)
+                if GLOBAL.GetWorld() then
+                    GLOBAL.GetWorld():PushEvent("feat_unlocked")
+                end
 
                 -- Unhide the feat, since it's unlocked now.
                 UnhideFeat(keyname, callback)
@@ -719,14 +738,35 @@ local meta_description = "You built an Accomploshrine! Check out your feats in-g
 AddFeat("MetaFeat", "Feat-Ception", meta_description, true, false, tiny_score, "Build an accomplishment shrine to unlock this feat.")
 
 local function AppendAccomploshrine(inst)
+
+    local percent = GetTotalScore() / GetMaxScore()
+
+    if debugging then
+        print("DEBUG-PERCENT")
+        print(percent)
+    end
+
+    inst.AnimState:SetPercent("active", percent)
+
     inst:ListenForEvent("onbuilt", function()
         GLOBAL.GetPlayer().components.feattrigger:Trigger("MetaFeat")
     end)
+
     inst.components.activatable.getverb = function() return "CHECK" end
     inst.components.activatable.OnActivate = function(inst)
         FeatsOpen()
         inst.components.activatable.inactive = true
     end
+
+    GLOBAL.GetWorld():ListenForEvent("feat_unlocked", function()
+        percent = GetTotalScore() / GetMaxScore()
+        if debugging then
+            print("DEBUG-PERCENT")
+            print(percent)
+        end
+        inst.AnimState:SetPercent("active", percent)
+    end)
+
 end
 
 AddPrefabPostInit("accomplishment_shrine", AppendAccomploshrine)
