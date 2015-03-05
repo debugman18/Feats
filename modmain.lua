@@ -786,27 +786,68 @@ GLOBAL.Recipe("accomplishment_shrine",
 
 ------------------------------------------------------------
 
--- Dummy feats for testing. Disable/enable as necessary.
-AddFeat("Dummy0", nil, nil, true, true)
-AddFeat("Dummy1", nil, nil, true, true)
-AddFeat("Dummy2", nil, nil, true, true)
+-- Kill 13 followers.
+-- A Ritual
 
-AddFeat("Dummy3", nil, nil, true, true)
-AddFeat("Dummy4", nil, nil, true, true)
-AddFeat("Dummy5", nil, nil, true, true)
-AddFeat("Dummy6", nil, nil, true, true)
-AddFeat("Dummy7", nil, nil, true, true)
+------------------------------------------------------------
 
-AddFeat("Dummy8", nil, nil, true, true)
-AddFeat("Dummy9", nil, nil, true, true)
-AddFeat("Dummy10", nil, nil, true, true)
-AddFeat("Dummy11", nil, nil, true, true)
---AddFeat("Dummy12", nil, nil, true, true)
+-- 
 
---AddFeat("Dummy13", nil, nil, true, true)
---AddFeat("Dummy14", nil, nil, true, true)
---AddFeat("Dummy15", nil, nil, true, true)
---AddFeat("Dummy16", nil, nil, true, true)
---AddFeat("Dummy17", nil, nil, true, true)
+------------------------------------------------------------
+
+PropegateDummyFeats = function()
+
+    -- Clear the dummy feats on each load.
+    for index,keyname in pairs(GetFeatNames()) do    
+        if debugging then
+            print("DEBUG-COMPARE")
+            print(keyname)
+        end
+
+        if string.match(keyname, "Dummy") == "Dummy" then
+            Feats:ClearValue(keyname)
+            Feats:Save()
+        end
+    end
+
+    -----------------------------------------
+
+    local feat_count = #GetFeatNames()
+
+    local max_feat_count = 25
+
+    local rounding_factor = 5
+
+    local ideal_feat_count = math.ceil(
+        ( (feat_count * (rounding_factor) ) * 0.5 )
+    )
+
+    if ideal_feat_count >= max_feat_count then
+        ideal_feat_count = max_feat_count
+    end
+
+    local dummy_count = ideal_feat_count - feat_count
+    local start_array = 1
+
+    local dummy_warning = "This feat is not ready yet!"
+
+    if debugging then
+        print("--------------")
+        print("DEBUG-DUMMY")
+        print("Feat Count: " .. feat_count)
+        print("Max Feat Count: " .. max_feat_count)
+        print("Ideal Feat Count: " .. ideal_feat_count)
+        print("Dummy Count: " .. dummy_count)
+        print("--------------")
+        print("DEBUG-CLEANING")
+    end
+
+    for dummy_id = start_array,dummy_count do
+        AddFeat("Dummy" .. dummy_id, "Missing Feat", dummy_warning, true, true, nil, dummy_warning)
+    end
+
+end
+
+PropegateDummyFeats()
 
 ------------------------------------------------------------

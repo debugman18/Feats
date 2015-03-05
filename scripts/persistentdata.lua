@@ -21,6 +21,11 @@ function PersistentData:Reset()
     self.dirty = true
 end
 
+function PersistentData:ClearValue(key)
+    self.persistdata[key] = nil
+    self.dirty = true
+end
+
 function PersistentData:SetValue(key, value)
     self.persistdata[key] = value
     self.dirty = true
