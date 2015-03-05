@@ -250,6 +250,16 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
 end)
 
+-- ESC/Pause Button will close the feats menu.
+function FeatsScreen:OnControl(control, down)
+    if FeatsScreen._base.OnControl(self,control, down) then return true end
+
+    if (control == CONTROL_PAUSE or control == CONTROL_CANCEL) and not down then 
+        self:Return()
+        return true
+    end
+end
+
 function FeatsScreen:Return()
     SetPause(false)
 	TheFrontEnd:PopScreen()

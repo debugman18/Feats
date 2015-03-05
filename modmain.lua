@@ -473,7 +473,7 @@ end
 
 ------------------------------------------------------------
 
--- Add the FeatTrigger component to the player.
+-- Add the FeatTrigger component to the player, and reward the player according the their score.
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
         if not inst.components.feattrigger then
@@ -483,7 +483,7 @@ AddPrefabPostInitAny(function(inst)
             end
             inst:AddComponent("feattrigger")
         end
-    end
+    end  
 end)
 
 ------------------------------------------------------------
@@ -550,7 +550,7 @@ local function RabbitKillerCheck(inst, deadthing, cause)
             print(num)
         end
 
-        if rabbitkills <= 1 then
+        if num <= 1 then
             GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller")
         elseif rabbitkills >= 100 then
             GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller100")
@@ -607,6 +607,7 @@ local function AltarProtyperFlag(inst)
     local onactivate_cached = inst.components.prototyper.onactivate
     inst.components.prototyper.onactivate = function()
         GLOBAL.GetPlayer().components.feattrigger:Trigger("AltarPrototyper")
+        GLOBAL.GetPlayer().components.feattrigger:Trigger("ThemFeat1", true)
         onactivate_cached()
     end
 end
@@ -632,10 +633,6 @@ local function TallBirdEggFlag(inst)
 end
 
 AddPrefabPostInit("tallbirdegg_cracked", TallBirdEggFlag)
-
-------------------------------------------------------------
-
--- Shaving a beefalo.
 
 ------------------------------------------------------------
 
@@ -677,24 +674,14 @@ end)
 
 ------------------------------------------------------------
 
--- Summon a Krampus.
+-- Summoned a Krampus.
 AddFeat("KrampusVictim", "Naughty, Not Nice", "You were naughty enough to summon Krampus.", true, true, med_score)
 
-local function KrampusFlag(component)
-    local naughty_action = component.OnNaughtyAction
-    component.OnNaughtyAction = function(self, how_naughty)
-        if self.threshold == nil then
-            self.threshold = TUNING.KRAMPUS_THRESHOLD + math.random(TUNING.KRAMPUS_THRESHOLD_VARIANCE)
-        end
-        local actions = self.actions + (how_naughty or 1)
-        if actions >= self.threshold and self.threshold > 0 then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("KrampusVictim")
-        end
-        naughty_action(self, how_naughty)
-    end
+local function KrampusFlag(inst)
+    GLOBAL.GetPlayer().components.feattrigger:Trigger("KrampusVictim")
 end
 
-AddComponentPostInit("kramped", KrampusFlag)
+AddPrefabPostInit("krampus", KrampusFlag)
 
 ------------------------------------------------------------
 
@@ -786,12 +773,117 @@ GLOBAL.Recipe("accomplishment_shrine",
 
 ------------------------------------------------------------
 
--- Kill 13 followers.
--- A Ritual
+-- Kill followers as an initiation.
+local initiation_description = "You have further attracted Their interest."
+AddFeat("ThemFeat1", "Initiation", initiation_description, true, true, med_score, "Perform an old ritual for Them...")
+
+local function FollowerKillerCheck(inst, target)
+    Stats:Load()
+
+    local initiation_threshold = 2 --13
+
+    local followerkills = Stats:GetValue("FollowerKills") or 0
+    local num = followerkills + 1
+
+    if inst.components.leader:IsFollower(target) then
+
+        target:ListenForEvent("death", function(inst)
+
+            Stats:SetValue("FollowerKills", num)
+            Stats:Save(true)
+
+            if debugging then
+                print("------------------------------")
+                print("DEBUG-METRICS")
+                print("FOLLOWERKILLS:")
+                print(num)
+            end
+
+            if num >= initiation_threshold then
+                GLOBAL.GetPlayer().components.feattrigger:Trigger("ThemFeat1")
+            end
+
+        end)
+
+    end
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+        inst:ListenForEvent("newcombattarget", function(inst, data) FollowerKillerCheck(inst, data.target) end)
+    end
+end)
 
 ------------------------------------------------------------
 
--- 
+-- Survive a month without eating meat.
+local veggie_hint = "Survive thirty days without eating meat to unlock this feat."
+local veggie_description = "You survived a month without eating meat!"
+
+AddFeat("Vegetarian", "Vegetarianism", veggie_description, true, false, med_score, veggie_hint)
+
+local function VegetarianChecker(inst, food)
+    Stats:Load()
+
+    local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+    local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+
+    if food.components.edible.ismeat then
+        Stats:SetValue("MeatEaten" .. save_id, true)
+        Stats:Save()
+    end
+
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+
+        local oneatfn_cached = function(inst)
+            if inst.components.eater.oneatfn then
+                return inst.components.eater.oneatfn
+            end
+        end
+
+        inst.components.eater:SetOnEatFn(function(inst, food)
+            oneatfn_cached(inst, food)
+            VegetarianChecker(inst, food)
+        end)
+
+        inst:ListenForEvent("daytime", function(inst, data) 
+            local current_day = GLOBAL.GetClock():GetNumCycles()
+           
+            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+
+            Stats:Load()
+
+            local meat_eaten = Stats:GetValue("MeatEaten" .. save_id) or false
+
+            local current_day = Stats:GetValue("CurrentDay" .. save_id) or 0
+
+            local num = current_day + 1
+
+            local days_check = 30
+
+            Stats:SetValue("CurrentDay" .. save_id, num)
+            Stats:Save()
+
+            if debugging then
+                print(save_id)
+                print("Day: " .. num)
+                print("Meat Eaten: " .. tostring(meat_eaten))
+            end
+
+            if meat_eaten == false then
+                if num == days_check then
+                    GLOBAL.GetPlayer().components.feattrigger:Trigger("Vegetarian")
+                end
+            end
+
+        end, GLOBAL.GetWorld())
+
+    end
+end)
 
 ------------------------------------------------------------
 
