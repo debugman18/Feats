@@ -240,8 +240,8 @@ end
 ----------------------------------------------------------------------------
 
 -- Refresh the description, name, score, and hint of a feat.
--- 1, 2, 5, 6
-RefreshFeat = function(keyname, name, description, score, hint)
+-- 1, 2, 5, 6, 7
+RefreshFeat = function(keyname, name, description, score, hint, epilogue)
 
     Feats:Load()
 
@@ -286,6 +286,7 @@ RefreshFeat = function(keyname, name, description, score, hint)
                 print(Feats:GetValue(keyname)[6])
             end
         end
+
     end
 
     Feats:SetValue(keyname, feat_cached)
@@ -435,7 +436,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
             print("Feat " .. "\"" .. name .. "\"" .. " already exists. Refreshing...")
         end
         RefreshFeat(keyname, name, description, score, hint)
-        Save()
+        Feats:Save()
     end
 end
 
@@ -473,17 +474,17 @@ end
 
 ------------------------------------------------------------
 
--- Add the FeatTrigger component to the player, and reward the player according the their score.
-AddPrefabPostInitAny(function(inst)
-    if inst and inst:HasTag("player") then
-        if not inst.components.feattrigger then
-            if debugging then
-                print("------------------------------")
-                print("Adding feattrigger component to player.")
-            end
-            inst:AddComponent("feattrigger")
+-- Add the FeatTrigger component to the world.
+AddPrefabPostInit("world", function(inst)
+    if not inst.components.feattrigger then
+
+        if debugging then
+            print("------------------------------")
+            print("Adding feattrigger component to world.")
         end
-    end  
+
+        inst:AddComponent("feattrigger")
+    end
 end)
 
 ------------------------------------------------------------
@@ -504,7 +505,7 @@ local function DeerGutsCheck(inst, deadthing, cause)
     end
     if GLOBAL.GetPlayer().prefab == cause then
         if not GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS) then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("DeerGuts")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("DeerGuts")
         end
     end 
 end
@@ -551,9 +552,9 @@ local function RabbitKillerCheck(inst, deadthing, cause)
         end
 
         if num <= 1 then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("RabbitKiller")
         elseif rabbitkills >= 100 then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("RabbitKiller100")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("RabbitKiller100")
         end
     end 
 
@@ -569,13 +570,14 @@ AddPrefabPostInit("rabbit", RabbitKillerFeat)
 
 -- Reached max science level.
 local max_science_hint = "Obtain some uncommon knowledge to unlock this feat."
+
 AddFeat("MaxSciencePrototyper", "Uncommon Knowledge", "Prototyped an item at the Alchemy Engine.", true, false, small_score, max_science_hint)
 
 local function MaxScienceProtyperFlag(inst)
     local onactivate_cached = inst.components.prototyper.onactivate
     inst.components.prototyper.onactivate = function()
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("MaxSciencePrototyper")
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("MaxMagicPrototyper", true)
+        GLOBAL.GetWorld().components.feattrigger:Trigger("MaxSciencePrototyper")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("MaxMagicPrototyper", true)
         onactivate_cached()
     end
 end
@@ -591,7 +593,7 @@ AddFeat("MaxMagicPrototyper", "Dark Knowledge", "Prototyped an item at the Shado
 local function MaxMagicProtyperFlag(inst)
     local onactivate_cached = inst.components.prototyper.onactivate
     inst.components.prototyper.onactivate = function()
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("MaxMagicPrototyper")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("MaxMagicPrototyper")
         onactivate_cached()
     end
 end
@@ -606,8 +608,8 @@ AddFeat("AltarPrototyper", "Forgotten Knowledge", "Prototyped an item at the Alt
 local function AltarProtyperFlag(inst)
     local onactivate_cached = inst.components.prototyper.onactivate
     inst.components.prototyper.onactivate = function()
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("AltarPrototyper")
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("ThemFeat1", true)
+        GLOBAL.GetWorld().components.feattrigger:Trigger("AltarPrototyper")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("ThemFeat1", true)
         onactivate_cached()
     end
 end
@@ -626,7 +628,7 @@ local function TallBirdEggFlag(inst)
     inst.components.hatchable:SetOnState(function(inst, state)
         print(state)
         if state == "hatch" then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("TallBirdHatcher")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("TallBirdHatcher")
         end
         onstate_cached(inst, state)
     end)
@@ -642,7 +644,7 @@ AddFeat("PenguinVictim", "Pengull Chow", "Got killed by a pengull.", true, true,
 local function PengullKillerCheck(inst, deadthing, cause)
     if inst == deadthing then
         if cause == "penguin" then
-            inst.components.feattrigger:Trigger("PenguinVictim")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("PenguinVictim")
         end
     end
 end
@@ -661,7 +663,7 @@ AddFeat("TeenbirdVictim", "Et tu, Brute?", "Got killed by your old friend.", tru
 local function TeenbirdKillerCheck(inst, deadthing, cause)
     if inst == deadthing then
         if cause == "teenbird" then
-            inst.components.feattrigger:Trigger("TeenbirdVictim")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("TeenbirdVictim")
         end
     end
 end
@@ -678,7 +680,7 @@ end)
 AddFeat("KrampusVictim", "Naughty, Not Nice", "You were naughty enough to summon Krampus.", true, true, med_score)
 
 local function KrampusFlag(inst)
-    GLOBAL.GetPlayer().components.feattrigger:Trigger("KrampusVictim")
+    GLOBAL.GetWorld().components.feattrigger:Trigger("KrampusVictim")
 end
 
 AddPrefabPostInit("krampus", KrampusFlag)
@@ -701,7 +703,7 @@ local function ShadyMinotaurCheck(inst, deadthing, cause)
     end
     if GLOBAL.GetPlayer().prefab == cause then
         if GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS) and GLOBAL.GetPlayer().components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS.prefab) == "umbrella" or "grass_umbrella" then
-            GLOBAL.GetPlayer().components.feattrigger:Trigger("ShadyMinotaur")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("ShadyMinotaur")
         end
     end 
 end
@@ -736,7 +738,7 @@ local function AppendAccomploshrine(inst)
     inst.AnimState:SetPercent("active", percent)
 
     inst:ListenForEvent("onbuilt", function()
-        GLOBAL.GetPlayer().components.feattrigger:Trigger("MetaFeat")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("MetaFeat")
     end)
 
     inst.components.activatable.getverb = function() return "CHECK" end
@@ -775,12 +777,12 @@ GLOBAL.Recipe("accomplishment_shrine",
 
 -- Kill followers as an initiation.
 local initiation_description = "You have further attracted Their interest."
-AddFeat("ThemFeat1", "Initiation", initiation_description, true, true, med_score, "Perform an old ritual for Them...")
+AddFeat("ThemFeat1", "The Initiation", initiation_description, true, true, med_score, "Perform an old ritual for Them...")
 
 local function FollowerKillerCheck(inst, target)
     Stats:Load()
 
-    local initiation_threshold = 2 --13
+    local initiation_threshold = 2
 
     local followerkills = Stats:GetValue("FollowerKills") or 0
     local num = followerkills + 1
@@ -800,7 +802,7 @@ local function FollowerKillerCheck(inst, target)
             end
 
             if num >= initiation_threshold then
-                GLOBAL.GetPlayer().components.feattrigger:Trigger("ThemFeat1")
+                GLOBAL.GetWorld().components.feattrigger:Trigger("ThemFeat1")
             end
 
         end)
@@ -876,7 +878,7 @@ AddPrefabPostInitAny(function(inst)
 
             if meat_eaten == false then
                 if num == days_check then
-                    GLOBAL.GetPlayer().components.feattrigger:Trigger("Vegetarian")
+                    GLOBAL.GetWorld().components.feattrigger:Trigger("Vegetarian")
                 end
             end
 
