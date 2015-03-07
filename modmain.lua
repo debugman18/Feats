@@ -739,6 +739,7 @@ local function AppendAccomploshrine(inst)
 
     inst:ListenForEvent("onbuilt", function()
         GLOBAL.GetWorld().components.feattrigger:Trigger("MetaFeat")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful")
     end)
 
     inst.components.activatable.getverb = function() return "CHECK" end
@@ -851,17 +852,16 @@ AddPrefabPostInitAny(function(inst)
             VegetarianChecker(inst, food)
         end)
 
-        inst:ListenForEvent("daytime", function(inst, data) 
-            local current_day = GLOBAL.GetClock():GetNumCycles()
-           
-            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+        inst:ListenForEvent("daytime", function(inst, data)
 
             Stats:Load()
 
-            local meat_eaten = Stats:GetValue("MeatEaten" .. save_id) or false
+            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
 
-            local current_day = Stats:GetValue("CurrentDay" .. save_id) or 0
+            local current_day = Stats:GetValue("CurrentDay" .. save_id) or 1
+           
+            local meat_eaten = Stats:GetValue("MeatEaten" .. save_id) or false
 
             local num = current_day + 1
 
@@ -885,7 +885,106 @@ AddPrefabPostInitAny(function(inst)
         end, GLOBAL.GetWorld())
 
     end
+
 end)
+
+------------------------------------------------------------
+
+-- Craft everything at least once, between all characters.
+local craft_hint = "Craft each recipe at least once to unlock this feat."
+local craft_description = "You have crafted every recipe at least once!"
+
+AddFeat("Resourceful", "Resourceful", craft_description, true, true, huge_score, craft_hint)
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+        inst:ListenForEvent("builditem", function(inst, data)
+
+            Stats:Load()
+
+            local cached_crafted = Stats:GetValue("CraftedItems") or {}
+
+            local craftables = {}
+
+            for k,v in pairs(GLOBAL.Recipes) do
+                if not craftables[k] then
+                    table.insert(craftables, k)
+                end
+            end
+
+            if not cached_crafted[data.item.prefab] then
+                table.insert(cached_crafted, data.item.prefab)
+            end
+
+            ----
+
+            table.sort(cached_crafted, function(a, b)
+                return a < b              
+            end)
+
+            table.sort(craftables, function(a, b)
+                return a < b
+            end)
+
+            ----
+
+            if debugging then
+                print("Crafted " .. data.item.prefab)
+
+                print("----------")
+                print("CRAFTABLES")
+                for k,v in pairs(craftables) do
+                    print(v)
+                end
+
+                print("----------")
+                print("CRAFTED")
+                for k,v in pairs(cached_crafted) do
+                    print(v)
+                end
+            end
+
+            Stats:SetValue("CraftedItems", cached_crafted)
+            Stats:Save()
+
+            if cached_crafted == craftables then
+                GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful")
+            end
+
+        end, inst)
+    end
+end)
+
+------------------------------------------------------------
+
+-- Survive 30 days without equipping armor.
+-- Untouchable
+
+-- Survive 30 days without equipping a weapon or attacking an enemy.
+-- Pacifist
+
+-- Survive 30 days in the Lights Out preset.
+-- Nocturnal
+
+-- Create one or more of each type of food item.
+-- Still Not Starving
+
+-- Survive 30 days without using containers.
+-- What Container?
+
+------------------------------------------------------------
+
+-- Survive 30 days without crafting a science machine.
+-- Minimalist
+
+-- Survive 30 days without chopping a tree down.
+-- Environmentalist
+
+-- See each of Chester's upgrades.
+-- Chester the Versatile
+
+-- Kill 6 Koalaphants.
+-- Big Game Hunter
 
 ------------------------------------------------------------
 
