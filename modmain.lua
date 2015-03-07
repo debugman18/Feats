@@ -873,9 +873,10 @@ AddPrefabPostInitAny(function(inst)
                 local current_day = Stats:GetValue("DaysWithoutMeat" .. save_id) or 0
 
                 -- Let's retroactively apply our improvements without tossing progress.
-                if Stats:GetValue("MeatEaten" .. save_id) == false then
+                if Stats:GetValue("MeatEaten" .. save_id) == false and Stats:GetValue("CurrentDay" .. save_id) >= 0 then
                     current_day = Stats:GetValue("CurrentDay" .. save_id) or 0
                     Stats:ClearValue("MeatEaten" .. save_id)
+                    Stats:ClearValue("CurrentDay" .. save_id)
                     Stats:Save()
                 end
 
