@@ -832,7 +832,7 @@ local function VegetarianChecker(inst, food)
     local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
 
     if food.components.edible.ismeat then
-        Stats:SetValue("MeatEaten" .. save_id, true)
+        Stats:SetValue("DaysWithoutMeat" .. save_id, 0)
         Stats:Save()
     end
 
@@ -840,6 +840,8 @@ end
 
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
+
+        local new_day = false
 
         local oneatfn_cached = function(inst)
             if inst.components.eater.oneatfn then
@@ -852,34 +854,42 @@ AddPrefabPostInitAny(function(inst)
             VegetarianChecker(inst, food)
         end)
 
+        -- Make sure the day trigger only comes after a night.
+        inst:ListenForEvent("nighttime", function(inst, data)
+
+            new_day = true
+
+        end, GLOBAL.GetWorld())
+
         inst:ListenForEvent("daytime", function(inst, data)
 
-            Stats:Load()
+            if new_day then
 
-            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+                Stats:Load()
 
-            local current_day = Stats:GetValue("CurrentDay" .. save_id) or 1
-           
-            local meat_eaten = Stats:GetValue("MeatEaten" .. save_id) or false
+                local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+                local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
 
-            local num = current_day + 1
+                local current_day = Stats:GetValue("DaysWithoutMeat" .. save_id) or 0
 
-            local days_check = 30
+                local num = current_day + 1
 
-            Stats:SetValue("CurrentDay" .. save_id, num)
-            Stats:Save()
+                local days_check = 30
 
-            if debugging then
-                print(save_id)
-                print("Day: " .. num)
-                print("Meat Eaten: " .. tostring(meat_eaten))
-            end
+                Stats:SetValue("DaysWithoutMeat" .. save_id, num)
+                Stats:Save()
 
-            if meat_eaten == false then
+                if debugging then
+                    print(save_id)
+                    print("Days without meat: " .. num)
+                end
+
                 if num == days_check then
                     GLOBAL.GetWorld().components.feattrigger:Trigger("Vegetarian")
                 end
+
+                new_day = false
+
             end
 
         end, GLOBAL.GetWorld())
@@ -896,62 +906,72 @@ local craft_description = "You have crafted every recipe at least once!"
 
 AddFeat("Resourceful", "Resourceful", craft_description, true, true, huge_score, craft_hint)
 
+local function CheckCrafted(inst, data)
+
+    Stats:Load()
+
+    local prod = data.item.prefab
+
+    local item_crafted = Stats:GetValue("CraftedItem" .. prod) or nil
+
+    local cached_crafted = Stats:GetValue("CraftedItems") or {}
+
+    local craftables = {}
+
+    for k,v in pairs(GLOBAL.Recipes) do
+        if not craftables[k] then
+            table.insert(craftables, k)
+        end
+    end
+
+    if not item_crafted then
+        table.insert(cached_crafted, prod)
+    end
+
+    ----
+
+    -- Alphabetize the lists.
+
+    table.sort(cached_crafted, function(a, b)
+        return a < b              
+    end)
+
+    table.sort(craftables, function(a, b)
+        return a < b
+    end)
+
+    ----
+
+    if debugging then
+        print("Crafted " .. prod)
+
+        print("----------")
+        print("CRAFTABLES")
+        for k,v in pairs(craftables) do
+            print(v)
+        end
+
+        print("----------")
+        print("CRAFTED")
+        for k,v in pairs(cached_crafted) do
+            print(v)
+        end
+    end
+
+    Stats:SetValue("CraftedItem" .. prod, true)
+    Stats:SetValue("CraftedItems", cached_crafted)
+    Stats:Save()
+
+    if cached_crafted == craftables then
+        GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful")
+    end
+
+end
+
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
-        inst:ListenForEvent("builditem", function(inst, data)
-
-            Stats:Load()
-
-            local cached_crafted = Stats:GetValue("CraftedItems") or {}
-
-            local craftables = {}
-
-            for k,v in pairs(GLOBAL.Recipes) do
-                if not craftables[k] then
-                    table.insert(craftables, k)
-                end
-            end
-
-            if not cached_crafted[data.item.prefab] then
-                table.insert(cached_crafted, data.item.prefab)
-            end
-
-            ----
-
-            table.sort(cached_crafted, function(a, b)
-                return a < b              
-            end)
-
-            table.sort(craftables, function(a, b)
-                return a < b
-            end)
-
-            ----
-
-            if debugging then
-                print("Crafted " .. data.item.prefab)
-
-                print("----------")
-                print("CRAFTABLES")
-                for k,v in pairs(craftables) do
-                    print(v)
-                end
-
-                print("----------")
-                print("CRAFTED")
-                for k,v in pairs(cached_crafted) do
-                    print(v)
-                end
-            end
-
-            Stats:SetValue("CraftedItems", cached_crafted)
-            Stats:Save()
-
-            if cached_crafted == craftables then
-                GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful")
-            end
-
-        end, inst)
+        inst:ListenForEvent("buildstructure", CheckCrafted, inst)
+        inst:ListenForEvent("builditem", CheckCrafted, inst)
     end
 end)
 
