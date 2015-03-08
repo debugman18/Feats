@@ -1026,9 +1026,34 @@ end)
 -- See each of Chester's upgrades.
 -- Chester the Versatile
 
--- Kill 6 Koalaphants.
--- Big Game Hunter
+------------------------------------------------------------
 
+-- Kill 6 Koalaphants.
+AddFeat("KoalephantHunter", "Big Game Hunter", "Hunted and killed 6 Koalephants.", true, true, large_score)
+
+local function KoalephantKillerCheck(inst, deadthing, cause)
+    Stats:Load()
+
+    local koalephant_deaths = Stats:GetValue("KoalephantKills") or 0
+
+    local num = koalephant_deaths + 1
+
+    local feat_threshold = 6
+
+    Stats:SetValue("KoalephantKills", num)
+
+    Stats:Save()
+
+    if num >= feat_threshold then
+        GLOBAL.GetWorld().components.feattrigger:Trigger("KoalephantHunter")
+    end
+end
+
+local function KoalephantKillerCheck(inst)
+    inst:ListenForEvent("death", function(inst, data) KoalephantKillerCheck(inst, data.inst, data.cause) end)
+end
+
+AddPrefabPostInit("koalephant", KoalephantKillerFeat)
 ------------------------------------------------------------
 
 PropegateDummyFeats = function()

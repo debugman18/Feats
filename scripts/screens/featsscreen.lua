@@ -1,5 +1,3 @@
--- TODO: Create a UI implementation which displays feats according to their specifications.
-
 -- Import our modenv.
 local modenv = require "feats.modenv"
 
