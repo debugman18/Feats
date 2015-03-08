@@ -452,6 +452,30 @@ end
 
 ------------------------------------------------------------
 
+-- Abstract function to check kill metrics.
+CheckKills = function(inst, deadthing, cause, feat, threshold)
+    Stats:Load()
+
+    local prefab = string.upper(inst.prefab)
+    local name = GLOBAL.STRINGS.NAMES[prefab]
+    local kills = Stats:GetValue(name .. "Kills") or 0
+    local num = kills + 1
+    local threshold = threshold or 1
+
+    if debugging then
+        print(name .. " Kills: " .. num)
+    end
+
+    Stats:SetValue(name .. "Kills", num)
+    Stats:Save()
+
+    if num == threshold then
+        GLOBAL.GetWorld().components.feattrigger:Trigger(feat)
+    end
+end
+
+------------------------------------------------------------
+
 -- Load before we add feats, so we can do a redundancy check.
 Load()
 
@@ -1029,31 +1053,15 @@ end)
 ------------------------------------------------------------
 
 -- Kill 6 Koalaphants.
-AddFeat("KoalephantHunter", "Big Game Hunter", "Hunted and killed 6 Koalephants.", true, true, large_score)
+AddFeat("KoalephantHunter", "Big Game Hunter", "Hunted and killed 6 Koalefants.", true, true, large_score)
 
-local function KoalephantKillerCheck(inst, deadthing, cause)
-    Stats:Load()
-
-    local koalephant_deaths = Stats:GetValue("KoalephantKills") or 0
-
-    local num = koalephant_deaths + 1
-
-    local feat_threshold = 6
-
-    Stats:SetValue("KoalephantKills", num)
-
-    Stats:Save()
-
-    if num >= feat_threshold then
-        GLOBAL.GetWorld().components.feattrigger:Trigger("KoalephantHunter")
-    end
+local function KoalephantKillerFeat(inst)
+    inst:ListenForEvent("death", function(inst, data) CheckKills(inst, data.inst, data.cause, "KoalephantHunter", 6) end)
 end
 
-local function KoalephantKillerCheck(inst)
-    inst:ListenForEvent("death", function(inst, data) KoalephantKillerCheck(inst, data.inst, data.cause) end)
-end
+AddPrefabPostInit("koalefant_summer", KoalephantKillerFeat)
+AddPrefabPostInit("koalefant_winter", KoalephantKillerFeat)
 
-AddPrefabPostInit("koalephant", KoalephantKillerFeat)
 ------------------------------------------------------------
 
 PropegateDummyFeats = function()
