@@ -8,6 +8,7 @@ dont_starve_compatible = true
 reign_of_giants_compatible = true
 icon_atlas = "Feats.xml"
 icon = "Feats.tex"
+priority = -1
 
 configuration_options =
 {
