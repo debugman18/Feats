@@ -739,7 +739,7 @@ local function AppendAccomploshrine(inst)
 
     inst:ListenForEvent("onbuilt", function()
         GLOBAL.GetWorld().components.feattrigger:Trigger("MetaFeat")
-        GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful", true)
     end)
 
     inst.components.activatable.getverb = function() return "CHECK" end
@@ -957,6 +957,8 @@ local function CheckCrafted(inst, data)
         print("CRAFTABLES")
         for k,v in pairs(craftables) do
             print(v)
+            -- Uncomment to reset the list of crafted item.
+            --Stats:SetValue("CraftedItem" .. v, false)
         end
 
         print("----------")
@@ -970,7 +972,20 @@ local function CheckCrafted(inst, data)
     Stats:SetValue("CraftedItems", cached_crafted)
     Stats:Save()
 
-    if cached_crafted == craftables then
+    -- Make sure our tables match before unlocking the feat.
+    local function comparetables(t1, t2)
+        if #t1 ~= #t2 then 
+            return false 
+        end       
+        for i=1,#t1 do
+            if t1[i] ~= t2[i] then 
+                return false 
+            end
+        end
+        return true
+    end    
+
+    if comparetables(cached_crafted, craftables) then
         GLOBAL.GetWorld().components.feattrigger:Trigger("Resourceful")
     end
 
