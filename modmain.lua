@@ -1039,16 +1039,127 @@ end)
 -- Survive 30 days without using containers.
 -- What Container?
 
-------------------------------------------------------------
-
 -- Survive 30 days without crafting a science machine.
 -- Minimalist
 
 -- Survive 30 days without chopping a tree down.
 -- Environmentalist
 
+------------------------------------------------------------
+
 -- See each of Chester's upgrades.
--- Chester the Versatile
+local chester_desc = "Saw all of Chester's transformations."
+AddFeat("ChesterForms", "Eye For An Eye", chester_desc, true, true, med_score)
+
+AddPrefabPostInit("chester", function(inst)
+    Stats:Load()
+    inst:ListenForEvent("nighttime", function() 
+        if inst.ChesterState == "SHADOW" then
+            Stats:SetValue("ChesterShadow", true)
+            Stats:Save()
+        elseif inst.ChesterState == "SNOW" then
+            Stats:SetValue("ChesterSnow", true)
+            Stats:Save()
+        elseif Stats:GetValue("ChesterShadow") and Stats:GetValue("ChesterSnow") then 
+            GLOBAL.GetWorld().components.feattrigger:Trigger("ChesterForms")
+        end
+    end, GLOBAL.GetWorld())
+end)
+
+------------------------------------------------------------
+
+-- 4
+-- Kill yourself with a boomerang.
+-- Instant Karma
+
+-- 5
+-- Wear a melon hat while insane.
+-- Crazy Melon Man
+
+-- 6
+-- Stay insane for 7 days.
+-- I Can Taste Colors
+
+-- 7
+-- Survive winter without clothing.
+-- Dedicated Nudist
+
+-- 8
+-- Survive 12 days without eating.
+-- Fasting, Not Starving
+
+-- 9
+-- Kill a Treeguard with fire damage.
+-- Play With Fire
+
+------------------------------------------------------------
+
+-- Keep track of days in adventure mode.
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+
+        local new_day = false
+
+        -- Make sure the day trigger only comes after a night.
+        inst:ListenForEvent("nighttime", function(inst, data)
+
+            new_day = true
+
+        end, GLOBAL.GetWorld())
+
+        inst:ListenForEvent("daytime", function(inst, data)
+            if new_day then
+                Stats:Load()
+
+                local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+                local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+                local current_day = Stats:GetValue("AdventureDays" .. save_id) or 0
+                local num = current_day + 1
+
+                Stats:SetValue("AdventureDays" .. save_id, num)
+                Stats:Save()
+
+                if debugging then
+                    print(save_id)
+                    print("Days in adventure mode: " .. num)
+                end
+
+                new_day = false
+
+            end
+        end, GLOBAL.GetWorld())
+    end
+end)
+
+-- Complete Adventure mode, or complete Adventure mode in less than 60 days.
+local adventure_hint = "Compete Adventure mode to unlock this feat."
+local adventure_desc = "Completed Adventure mode!"
+AddFeat("AdventureComplete", "Ragtime", adventure_desc, true, false, large_score, adventure_hint)
+
+local fast_adventure_hint = "Complete Adventure mode in less than 60 days to unlock this feat."
+local fast_adventure_description = "Completed Adventure mode in less than 60 days!"
+AddFeat("AdventureFast", "I'm Late, I'm Late", fast_adventure_description, true, true, huge_score, fast_adventure_hint)
+
+local function EndGameChecker(inst)
+    Stats:Load()
+
+    local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+    local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+    local current_day = Stats:GetValue("AdventureDays" .. save_id) or 0
+    local days_check = 60
+
+    inst:DoTaskInTime(5, function()
+        if current_day >= days_check then
+            GLOBAL.GetWorld().components.feattrigger:Trigger("AdventureComplete")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("AdventureFast", true)
+        else
+            GLOBAL.GetWorld().components.feattrigger:Trigger("AdventureComplete")
+            GLOBAL.GetWorld().components.feattrigger:Trigger("AdventureFast")
+        end
+    end)
+end
+
+AddPrefabPostInit("maxwellendgame", EndGameChecker)
 
 ------------------------------------------------------------
 
@@ -1061,6 +1172,25 @@ end
 
 AddPrefabPostInit("koalefant_summer", KoalephantKillerFeat)
 AddPrefabPostInit("koalefant_winter", KoalephantKillerFeat)
+
+------------------------------------------------------------
+
+-- Steal items from a trapped chest without setting it off.
+local thief_hint = "Steal from a trapped chest without setting it off to unlock this feat."
+local thief_description = "Stole from a trapped chest without setting it off."
+AddFeat("TrappedChestThief", "Master Thief", thief_description, true, false, med_score, thief_hint)
+
+local function TrappedChestChecker(inst)
+    if inst.components.scenariorunner and inst.components.scenariorunner.script then
+        local onburnt_cached = inst.components.burnable.onburnt
+        inst.components.burnable:SetOnBurntFn(function(inst)
+            GLOBAL.GetWorld().components.feattrigger:Trigger("TrappedChestThief")
+            onburnt_cached()
+        end)
+    end
+end
+
+AddPrefabPostInit("treasurechest", TrappedChestChecker)
 
 ------------------------------------------------------------
 
