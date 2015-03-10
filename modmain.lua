@@ -1072,21 +1072,179 @@ end)
 -- Kill yourself with a boomerang.
 -- Instant Karma
 
--- 5
--- Wear a melon hat while insane.
--- Crazy Melon Man
+------------------------------------------------------------
 
--- 6
+-- Go crazy while wearing a watermelon hat.
+local melon_desc = "You went crazy while wearing a watermelon on your head."
+AddFeat("MelonMan", "Crazy Melon Man", melon_desc, true, true, small_score)
+
+AddPrefabPostInit("watermelonhat", function(inst)
+    GLOBAL.GetPlayer():ListenForEvent("goinsane", function(inst)
+            GLOBAL.GetWorld().components.feattrigger:Trigger("MelonMan")
+    end, GLOBAL.GetPlayer())
+end)
+
+------------------------------------------------------------
+
 -- Stay insane for 7 days.
--- I Can Taste Colors
+local insanity_desc = "You stayed insane for 7 days straight."
+AddFeat("InsanityMarathon", "I Can Taste Colors", insanity_desc, true, false, med_score)
+
+local function SanityFlagger(inst, sane)
+    Stats:Load()
+
+    local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+    local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+
+    Stats:SetValue("SanityStatus" .. save_id, sane)
+    print(tostring(sane))
+    Stats:Save()
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+
+        inst:ListenForEvent("goinsane", function(inst)
+            SanityFlagger(inst, false)
+        end, inst)
+
+        inst:ListenForEvent("gosane", function(inst)
+            SanityFlagger(inst, true)
+        end, inst)
+
+        local new_day = false
+
+        -- Make sure the day trigger only comes after a night.
+        inst:ListenForEvent("nighttime", function(inst, data)
+
+            new_day = true
+
+        end, GLOBAL.GetWorld())
+
+        inst:ListenForEvent("daytime", function(inst, data)
+
+            Stats:Load()
+
+            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+
+            local is_sane = Stats:GetValue("SanityStatus" .. save_id)
+
+            if new_day then
+
+                local current_day = Stats:GetValue("DaysInsane" .. save_id) or 0
+
+                local num = current_day + 1
+
+                local days_check = 7
+
+                if not is_sane then
+                    Stats:SetValue("DaysInsane" .. save_id, num)
+                    Stats:Save()
+                else
+                    num = 0
+                end
+
+                if debugging then
+                    print(save_id)
+                    print("Days insane: " .. num)
+                end
+
+                if num == days_check then
+                    GLOBAL.GetWorld().components.feattrigger:Trigger("InsanityMarathon")
+                end
+
+                new_day = false
+
+            end
+
+        end, GLOBAL.GetWorld())
+    end
+end)
 
 -- 7
 -- Survive winter without clothing.
 -- Dedicated Nudist
 
--- 8
+------------------------------------------------------------
+
 -- Survive 12 days without eating.
--- Fasting, Not Starving
+local fasting_hint = "Survive thirty days without eating meat to unlock this feat."
+local fasting_description = "You survived a month without eating meat!"
+
+AddFeat("Fasting", "Fasting, Not Starving", fasting_description, true, false, med_score, fasting_hint)
+
+local function FastingChecker(inst, food)
+    Stats:Load()
+
+    local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+    local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+
+    Stats:SetValue("DaysWithoutFood" .. save_id, 0)
+    Stats:Save()
+end
+
+AddPrefabPostInitAny(function(inst)
+    if inst and inst:HasTag("player") then
+
+        local new_day = false
+
+        local oneatfn_cached = function(inst)
+            if inst.components.eater.oneatfn then
+                return inst.components.eater.oneatfn
+            end
+        end
+
+        inst.components.eater:SetOnEatFn(function(inst, food)
+            oneatfn_cached(inst, food)
+            FastingChecker(inst, food)
+        end)
+
+        -- Make sure the day trigger only comes after a night.
+        inst:ListenForEvent("nighttime", function(inst, data)
+
+            new_day = true
+
+        end, GLOBAL.GetWorld())
+
+        inst:ListenForEvent("daytime", function(inst, data)
+
+            if new_day then
+
+                Stats:Load()
+
+                local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+                local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+
+                local current_day = Stats:GetValue("DaysWithoutFood" .. save_id) or 0
+
+                local num = current_day + 1
+
+                local days_check = 12
+
+                Stats:SetValue("DaysWithoutFood" .. save_id, num)
+                Stats:Save()
+
+                if debugging then
+                    print(save_id)
+                    print("Days without food: " .. num)
+                end
+
+                if num == days_check then
+                    GLOBAL.GetWorld().components.feattrigger:Trigger("Fasting")
+                end
+
+                new_day = false
+
+            end
+
+        end, GLOBAL.GetWorld())
+
+    end
+
+end)
+
+------------------------------------------------------------
 
 -- 9
 -- Kill a Treeguard with fire damage.
@@ -1108,13 +1266,23 @@ AddPrefabPostInitAny(function(inst)
         end, GLOBAL.GetWorld())
 
         inst:ListenForEvent("daytime", function(inst, data)
-            if new_day then
-                Stats:Load()
 
-                local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-                local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+            Stats:Load()
+
+            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+            local mode = GLOBAL.SaveGameIndex:GetCurrentMode(save_slot)
+
+            if new_day then
+
                 local current_day = Stats:GetValue("AdventureDays" .. save_id) or 0
                 local num = current_day + 1
+
+                if mode == "adventure" then
+                    -- Proceed as usually.
+                else 
+                    num = 0
+                end
 
                 Stats:SetValue("AdventureDays" .. save_id, num)
                 Stats:Save()
