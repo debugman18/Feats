@@ -51,6 +51,8 @@ end
 
 ----------------------------------------------------------------------------
  
+-- Wide save/load functionality.
+
 local function Save(dirty)
     Feats:Save(dirty)
     Score:Save(dirty)
@@ -70,6 +72,23 @@ local function Load()
         print("DEBUG-LOAD")
     end
 end
+
+-- Sometimes we need to reset everything.
+ResetAll = function()
+    if debugging then
+        print("------------------------------")
+        print("DEBUG-RESET")
+    end
+    Feats:Reset()
+    Score:Reset()
+    Stats:Reset()
+    Save(true)
+end
+
+-- Uncomment to reset everything.
+--ResetAll()
+
+------------------------------------------------------------
 
 ----------------------------------------------------------------------------
 
@@ -195,69 +214,18 @@ AddGlobalClassPostConstruct("screens/loadgamescreen", "LoadGameScreen", append_f
 
 ----------------------------------------------------------------------------
 
--- Unhide an arbitary feat.
-UnhideFeat = function(keyname, callback)
-    --[[
-    Feats:Load()
-    for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
-        if propertykey == 4 then
-            if debugging then
-                print("------------------------------")
-                print("DEBUG-UNHIDE")
-                print("Feat is hidden:")
-                print(hidden)
-            end
-            --]]
+-- Toggle whether an arbitrary feat is hidden.
+HideFeat = function(keyname, callback, hidden)
+    hidden = hidden or false
+    Feats:GetValue(keyname)[4] = hidden
+    Feats:Save(true)
 
-            hidden = false
-            Feats:GetValue(keyname)[4] = hidden
-            Feats:Save(true)
+    if debugging then
+        print("------------------------------")
+        print("Feat is hidden:")
+        print(hidden)     
+    end   
 
-            --[[
-            if debugging then
-                print("------------------------------")
-                print("Unhid: " .. keyname)
-
-                -- Let's assure the feat is unhidden.
-                print("------------------------------")
-                print("Feat is hidden:")
-                print(hidden)     
-            end     
-        end
-    end
-    --]] 
-    if callback then
-        callback()
-    end
-end
-
--- Hide an arbitary feat.
-HideFeat = function(keyname, callback)
-    Feats:Load()
-    for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
-        if propertykey == 4 then
-            if debugging then
-                print("------------------------------")
-                print("DEBUG-HIDE")
-                print("Feat is hidden:")
-                print(hidden)
-            end
-
-            hidden = true
-            Feats:GetValue(keyname)[4] = hidden
-            Feats:Save(true)
-
-            if debugging then
-                print("------------------------------")
-                print("Unhid: " .. keyname)
-
-                -- Let's assure the feat is hidden.
-                print("------------------------------")
-                print("Feat is hidden:")
-                print(hidden)  
-            end          
-        end
-    end
     if callback then
         callback()
     end
@@ -320,10 +288,10 @@ end
 
 ----------------------------------------------------------------------------
 
--- Unlock an arbitary feat.
-UnlockFeat = function(keyname, callback)
+-- Toggle whether an arbitrary feat is locked.
+LockFeat = function(keyname, callback, locked)
     Load()
-    for propertykey,locked in ipairs(Feats:GetValue(keyname)) do
+    for propertykey,locked_status in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 3 then
             if debugging then
                 print("------------------------------")
@@ -333,7 +301,7 @@ UnlockFeat = function(keyname, callback)
             end
 
             -- Make sure the feat has not been unlocked already.
-            if locked == true then
+            if locked_status == true then
 
                 -- Notify the player.
                 local title = "You accomplished a new feat!\n" .. "\"" .. Feats:GetValue(keyname)[1] .. "\""
@@ -343,22 +311,15 @@ UnlockFeat = function(keyname, callback)
                 end
 
                 -- Unhide the feat, since it's unlocked now.
-                UnhideFeat(keyname, callback)
+                HideFeat(keyname, callback, false)
 
                 -- Increase our total score.
                 for scorekey,score in ipairs(Feats:GetValue(keyname)) do
                     if scorekey == 5 then
-                        if debugging then
-                            print("------------------------------")
-                            print("DEBUG-SCORE")
-                            print("Feat has score value of:")
-                            print(score)
-                        end
 
                         local oldscore = Score:GetValue("FeatsScore") or 0
                         newscore = oldscore + score
                         Score:SetValue("FeatsScore", newscore)
-                        Score:Save(true)
 
                         if debugging then
                             -- Let's assure the score is changed.
@@ -374,49 +335,15 @@ UnlockFeat = function(keyname, callback)
                 end
             end
 
-            locked = false
+            locked = locked or false
             Feats:GetValue(keyname)[3] = locked
-            Feats:Save(true)
+            Save(true)
 
             if debugging then
                 print("------------------------------")
-                print("Unlocked: " .. keyname)
-                print("------------------------------")
-
-                -- Let's assure the feat is unlocked.
-                print("------------------------------")
-                print("Feat is locked:")
+                print("Feat " .. keyname .. " is locked:")
                 print(locked)
             end            
-        end
-    end
-end
-
--- Lock an arbitrary feat.
-LockFeat = function(keyname, callback)
-    Load()
-    for propertykey,locked in ipairs(Feats:GetValue(keyname)) do
-        if propertykey == 3 then
-            if debugging then
-                print("------------------------------")
-                print("DEBUG-LOCK")
-                print("Feat is locked:")
-                print(locked)
-            end
-
-            locked = true
-            Feats:GetValue(keyname)[3] = locked
-            Feats:Save(true)
-
-            if debugging then
-                print("------------------------------")
-                print("Unlocked: " .. keyname)
-
-                -- Let's assure the feat is locked.
-                print("------------------------------")
-                print("Feat is locked:")
-                print(locked)            
-            end
         end
     end
 end
@@ -522,7 +449,7 @@ TrackDays = function(inst, stat, threshold, feat, ext_logic, qualifier)
             local days_check = threshold
 
             if qualifier then
-                qualifier(inst)
+                num = qualifier(inst, save_slot, save_id, num) 
             end
 
             Stats:SetValue(stat .. save_id, num)
@@ -530,7 +457,7 @@ TrackDays = function(inst, stat, threshold, feat, ext_logic, qualifier)
 
             if debugging then
                 print(save_id)
-                print(tostring(stat) .. num)
+                print(tostring(stat) .. ": " .. num)
             end
 
             if not ext_logic and (num == days_check) then
@@ -549,24 +476,7 @@ Load()
 
 ------------------------------------------------------------
 
--- Sometimes we need to reset everything.
-ResetAll = function()
-    if debugging then
-        print("------------------------------")
-        print("DEBUG-RESET")
-    end
-    Feats:Reset()
-    Score:Reset()
-    Stats:Reset()
-    Save(true)
-end
-
--- Uncomment to reset everything.
-ResetAll()
-
-------------------------------------------------------------
-
--- Add the FeatTrigger component to the world.
+-- Add the FeatTrigger component to the world before adding feats.
 AddPrefabPostInit("world", function(inst)
     if not inst.components.feattrigger then
 
@@ -614,46 +524,11 @@ AddPrefabPostInit("deerclops", DeerGutsFeat)
 AddFeat("RabbitKiller", "Hare Hunter", "Killed your first rabbit.", true, false, tiny_score, "Kill a rabbit to unlock this feat.")
 AddFeat("RabbitKiller100", "Rabbit Eradicator", "Killed one-hundred rabbits!", true, true, med_score)
 
-local function RabbitKillerCheck(inst, deadthing, cause)
-    Stats:Load()
-
-    local rabbitkills = Stats:GetValue("RabbitKills") or 0
-    local num = rabbitkills + 1
-
-    if debugging then
-        print("------------------------------")
-        print("RABBITKILLERCHECK")
-        print(tostring(inst))
-        print(tostring(deadthing))
-        if cause then
-            print("Killer: " .. cause)
-        end
-        print("Player: " .. GLOBAL.GetPlayer().prefab)
-    end
-
-    -- Make sure a player did the killing.
-    if GLOBAL.GetPlayer().prefab == cause then
-        Stats:SetValue("RabbitKills", num)
-        Stats:Save(true)
-
-        if debugging then
-            print("------------------------------")
-            print("DEBUG-METRICS")
-            print("RABBITKILLS:")
-            print(num)
-        end
-
-        if num <= 1 then
-            GLOBAL.GetWorld().components.feattrigger:Trigger("RabbitKiller")
-        elseif rabbitkills >= 100 then
-            GLOBAL.GetWorld().components.feattrigger:Trigger("RabbitKiller100")
-        end
-    end 
-
-end
-
 local function RabbitKillerFeat(inst)
-    inst:ListenForEvent("death", function(inst, data) RabbitKillerCheck(inst, data.inst, data.cause) end)
+    inst:ListenForEvent("death", function(inst, data) 
+        CheckKills(inst, data.inst, data.cause, "RabbitKiller", 1) 
+        CheckKills(inst, data.inst, data.cause, "RabbitKiller100", 100) 
+    end)
 end
 
 AddPrefabPostInit("rabbit", RabbitKillerFeat)
@@ -809,7 +684,7 @@ AddPrefabPostInit("minotaur", ShadyMinotaurFeat)
 ------------------------------------------------------------
 
 -- A freebie.
-local welcome_description = "Thanks for downloading Feats!\n"
+local welcome_description = "Thanks for downloading Feats!"
 AddFeat("Welcome", "Welcome!", welcome_description, false, false)
 
 ------------------------------------------------------------
@@ -917,22 +792,29 @@ local veggie_description = "You survived a month without eating meat!"
 
 AddFeat("Vegetarian", "Vegetarianism", veggie_description, true, false, med_score, veggie_hint)
 
-local function VegetarianChecker(inst, food)
-    Stats:Load()
+-- Survive 12 days without eating.
+local fasting_hint = "Survive twelve days without eating to unlock this feat."
+local fasting_description = "You survived twelve days without eating!"
 
+AddFeat("Fasting", "Fasting, Not Starving", fasting_description, true, false, med_score, fasting_hint)
+
+-- Implementation.
+local function EdibleChecker(inst, food)
     local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
     local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
 
     if food.components.edible.ismeat then
         Stats:SetValue("DaysWithoutMeat" .. save_id, 0)
-        Stats:Save()
+        Stats:SetValue("DaysWithoutFood" .. save_id, 0)
+    else
+        Stats:SetValue("DaysWithoutFood" .. save_id, 0)
     end
 
+    Stats:Save()
 end
 
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
-
         local oneatfn_cached = function(inst)
             if inst.components.eater.oneatfn then
                 return inst.components.eater.oneatfn
@@ -940,14 +822,13 @@ AddPrefabPostInitAny(function(inst)
         end
 
         inst.components.eater:SetOnEatFn(function(inst, food)
+            EdibleChecker(inst, food)
             oneatfn_cached(inst, food)
-            VegetarianChecker(inst, food)
         end)
 
-        TrackDays(inst, "DaysWithoutMeat", 30, "Vegetarian")
-
+        TrackDays(inst, "DaysWithoutFood", 12, "Fasting", false)
+        TrackDays(inst, "DaysWithoutMeat", 30, "Vegetarian", false)
     end
-
 end)
 
 ------------------------------------------------------------
@@ -1100,24 +981,35 @@ AddFeat("MelonMan", "Crazy Melon Man", melon_desc, true, true, small_score)
 
 AddPrefabPostInit("watermelonhat", function(inst)
     GLOBAL.GetPlayer():ListenForEvent("goinsane", function(inst)
-            GLOBAL.GetWorld().components.feattrigger:Trigger("MelonMan")
+        GLOBAL.GetWorld().components.feattrigger:Trigger("MelonMan")
     end, GLOBAL.GetPlayer())
 end)
 
 ------------------------------------------------------------
 
 -- Stay insane for 7 days.
+local insanity_hint = "Stay insane for 7 days straight to unlock this feat."
 local insanity_desc = "You stayed insane for 7 days straight."
-AddFeat("InsanityMarathon", "I Can Taste Colors", insanity_desc, true, false, med_score)
+AddFeat("InsanityMarathon", "I Can Taste Colors", insanity_desc, true, false, med_score, insanity_hint)
+
+local function InsanityQualifier(inst, save_slot, save_id, num)
+    Stats:Load()
+    local is_sane = Stats:GetValue("SanityStatus" .. save_id)
+    print(tostring(is_sane))
+    if is_sane then
+        return 0
+    elseif is_sane ~= nil and is_sane == false then
+        return num
+    else
+        return 0
+    end
+end
 
 local function SanityFlagger(inst, sane)
-    Stats:Load()
-
     local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
     local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
 
     Stats:SetValue("SanityStatus" .. save_id, sane)
-    print(tostring(sane))
     Stats:Save()
 end
 
@@ -1132,137 +1024,14 @@ AddPrefabPostInitAny(function(inst)
             SanityFlagger(inst, true)
         end, inst)
 
-        local new_day = false
+        TrackDays(inst, "DaysInsane", 12, "InsanityMarathon", false, InsanityQualifier)
 
-        -- Make sure the day trigger only comes after a night.
-        inst:ListenForEvent("nighttime", function(inst, data)
-
-            new_day = true
-
-        end, GLOBAL.GetWorld())
-
-        inst:ListenForEvent("daytime", function(inst, data)
-
-            Stats:Load()
-
-            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
-
-            local is_sane = Stats:GetValue("SanityStatus" .. save_id)
-
-            if new_day then
-
-                local current_day = Stats:GetValue("DaysInsane" .. save_id) or 0
-
-                local num = current_day + 1
-
-                local days_check = 7
-
-                if not is_sane then
-                    Stats:SetValue("DaysInsane" .. save_id, num)
-                    Stats:Save()
-                else
-                    num = 0
-                end
-
-                if debugging then
-                    print(save_id)
-                    print("Days insane: " .. num)
-                end
-
-                if num == days_check then
-                    GLOBAL.GetWorld().components.feattrigger:Trigger("InsanityMarathon")
-                end
-
-                new_day = false
-
-            end
-
-        end, GLOBAL.GetWorld())
     end
 end)
 
 -- 7
 -- Survive winter without clothing.
 -- Dedicated Nudist
-
-------------------------------------------------------------
-
--- Survive 12 days without eating.
-local fasting_hint = "Survive thirty days without eating meat to unlock this feat."
-local fasting_description = "You survived a month without eating meat!"
-
-AddFeat("Fasting", "Fasting, Not Starving", fasting_description, true, false, med_score, fasting_hint)
-
-local function FastingChecker(inst, food)
-    Stats:Load()
-
-    local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-    local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
-
-    Stats:SetValue("DaysWithoutFood" .. save_id, 0)
-    Stats:Save()
-end
-
-AddPrefabPostInitAny(function(inst)
-    if inst and inst:HasTag("player") then
-
-        local new_day = false
-
-        local oneatfn_cached = function(inst)
-            if inst.components.eater.oneatfn then
-                return inst.components.eater.oneatfn
-            end
-        end
-
-        inst.components.eater:SetOnEatFn(function(inst, food)
-            oneatfn_cached(inst, food)
-            FastingChecker(inst, food)
-        end)
-
-        -- Make sure the day trigger only comes after a night.
-        inst:ListenForEvent("nighttime", function(inst, data)
-
-            new_day = true
-
-        end, GLOBAL.GetWorld())
-
-        inst:ListenForEvent("daytime", function(inst, data)
-
-            if new_day then
-
-                Stats:Load()
-
-                local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-                local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
-
-                local current_day = Stats:GetValue("DaysWithoutFood" .. save_id) or 0
-
-                local num = current_day + 1
-
-                local days_check = 12
-
-                Stats:SetValue("DaysWithoutFood" .. save_id, num)
-                Stats:Save()
-
-                if debugging then
-                    print(save_id)
-                    print("Days without food: " .. num)
-                end
-
-                if num == days_check then
-                    GLOBAL.GetWorld().components.feattrigger:Trigger("Fasting")
-                end
-
-                new_day = false
-
-            end
-
-        end, GLOBAL.GetWorld())
-
-    end
-
-end)
 
 ------------------------------------------------------------
 
@@ -1273,12 +1042,12 @@ end)
 ------------------------------------------------------------
 
 -- Keep track of days in adventure mode.
-local function AdventureQualifier(inst)
+local function AdventureQualifier(inst, save_slot, save_id, num)
     local mode = GLOBAL.SaveGameIndex:GetCurrentMode(save_slot)
     if mode == "adventure" then
-        -- Proceed as usual.
-    elseif num then 
-        num = 0
+        return num
+    else
+        return 0
     end
 end
 
@@ -1351,6 +1120,7 @@ AddPrefabPostInit("treasurechest", TrappedChestChecker)
 
 ------------------------------------------------------------
 
+-- Propegate some dummy feats so things look nicer.
 PropegateDummyFeats = function()
 
     -- Clear the dummy feats on each load.

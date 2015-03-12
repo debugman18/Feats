@@ -8,18 +8,18 @@ end)
 -- We could just do UnlockFeat, UnhideFeat, and/or we could do an interesting callback.
 function FeatTrigger:Trigger(keyname, onlyunhide, callback)
 	if not onlyunhide then
-    	modenv.UnlockFeat(keyname, callback)
+    	modenv.LockFeat(keyname, callback, false)
     else
-    	modenv.UnhideFeat(keyname, callback)
+    	modenv.HideFeat(keyname, callback, false)
     end
 end
 
 -- We could just do LockFeat, HideFeat, and/or we could do an interesting callback.
 function FeatTrigger:Untrigger(keyname, onlyhide, callback)
 	if not onlyhide then
-    	modenv.LockFeat(keyname, callback)
+    	modenv.LockFeat(keyname, callback, true)
     else
-    	modenv.HideFeat(keyname, callback)
+    	modenv.HideFeat(keyname, callback, true)
     end
 end
 
