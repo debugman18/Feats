@@ -28,6 +28,28 @@ local large_score = 50
 local huge_score = 100
 
 ----------------------------------------------------------------------------
+
+-- Mod tracking.
+
+local realmodnames = {}
+local fancymodnames = {}
+
+local mods_to_load = GLOBAL.KnownModIndex:GetModsToLoad()
+for i,modname in pairs(mods_to_load) do
+    local fancyname = GLOBAL.KnownModIndex:GetModFancyName(modname)
+    if modname.modfeats then
+        print("Mod feats files is: " .. tostring(modname.modfeats))
+    end
+    print(fancyname)
+    table.insert(realmodnames, modname)
+    table.insert(fancymodnames, fancyname)
+end
+
+GetMods = function(inst)
+
+end
+
+----------------------------------------------------------------------------
  
 local function Save(dirty)
     Feats:Save(dirty)
@@ -175,6 +197,7 @@ AddGlobalClassPostConstruct("screens/loadgamescreen", "LoadGameScreen", append_f
 
 -- Unhide an arbitary feat.
 UnhideFeat = function(keyname, callback)
+    --[[
     Feats:Load()
     for propertykey,hidden in ipairs(Feats:GetValue(keyname)) do
         if propertykey == 4 then
@@ -184,11 +207,13 @@ UnhideFeat = function(keyname, callback)
                 print("Feat is hidden:")
                 print(hidden)
             end
+            --]]
 
             hidden = false
             Feats:GetValue(keyname)[4] = hidden
             Feats:Save(true)
 
+            --[[
             if debugging then
                 print("------------------------------")
                 print("Unhid: " .. keyname)
@@ -197,9 +222,10 @@ UnhideFeat = function(keyname, callback)
                 print("------------------------------")
                 print("Feat is hidden:")
                 print(hidden)     
-            end      
+            end     
         end
     end
+    --]] 
     if callback then
         callback()
     end
@@ -398,7 +424,7 @@ end
 ----------------------------------------------------------------------------
 
 -- Add a feat to the achievement list.
-AddFeat = function(keyname, name, description, locked, hidden, score, hint)
+AddFeat = function(keyname, name, description, locked, hidden, score, hint, mod)
     GLOBAL.assert(keyname, "Added feats must have a unique identifier.")
     local name = name or "No Name"
     local description = description or "No Description"
@@ -406,8 +432,9 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
     local hidden = hidden or false
     local score = score or 0
     local hint = hint or "Fulfill this feat's qualifier to unlock it."
+    local mod = mod or nil
 
-    local feat = {name, description, locked, hidden, score, hint}
+    local feat = {name, description, locked, hidden, score, hint, mod}
     local feat_exists = Feats:GetValue(keyname)
     if debugging then
         print("------------------------------")
@@ -425,6 +452,7 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint)
             print("Hidden: " .. tostring(hidden))
             print("Score: " .. tostring(score))
             print("Hint: " .. hint)
+            print("Mod: " .. tostring(mod))
         end
         Feats:SetValue(keyname, feat)
         Save()
@@ -474,6 +502,46 @@ CheckKills = function(inst, deadthing, cause, feat, threshold)
     end
 end
 
+-- Abstract function to check day-to-day metrics.
+TrackDays = function(inst, stat, threshold, feat, ext_logic, qualifier)
+    local new_day = false
+
+    -- Make sure the day trigger only comes after a night.
+    inst:ListenForEvent("nighttime", function(inst, data)
+        new_day = true
+    end, GLOBAL.GetWorld())
+
+    inst:ListenForEvent("daytime", function(inst, data)
+        if new_day then
+            Stats:Load()
+
+            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
+            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
+            local current_day = Stats:GetValue(stat .. save_id) or 0
+            local num = current_day + 1
+            local days_check = threshold
+
+            if qualifier then
+                qualifier(inst)
+            end
+
+            Stats:SetValue(stat .. save_id, num)
+            Stats:Save()
+
+            if debugging then
+                print(save_id)
+                print(tostring(stat) .. num)
+            end
+
+            if not ext_logic and (num == days_check) then
+                GLOBAL.GetWorld().components.feattrigger:Trigger(feat)
+            end
+
+            new_day = false
+        end
+    end, GLOBAL.GetWorld())
+end
+
 ------------------------------------------------------------
 
 -- Load before we add feats, so we can do a redundancy check.
@@ -494,7 +562,7 @@ ResetAll = function()
 end
 
 -- Uncomment to reset everything.
---ResetAll()
+ResetAll()
 
 ------------------------------------------------------------
 
@@ -865,8 +933,6 @@ end
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
 
-        local new_day = false
-
         local oneatfn_cached = function(inst)
             if inst.components.eater.oneatfn then
                 return inst.components.eater.oneatfn
@@ -878,53 +944,7 @@ AddPrefabPostInitAny(function(inst)
             VegetarianChecker(inst, food)
         end)
 
-        -- Make sure the day trigger only comes after a night.
-        inst:ListenForEvent("nighttime", function(inst, data)
-
-            new_day = true
-
-        end, GLOBAL.GetWorld())
-
-        inst:ListenForEvent("daytime", function(inst, data)
-
-            if new_day then
-
-                Stats:Load()
-
-                local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-                local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
-
-                local current_day = Stats:GetValue("DaysWithoutMeat" .. save_id) or 0
-
-                -- Let's retroactively apply our improvements without tossing progress.
-                if Stats:GetValue("MeatEaten" .. save_id) == false and Stats:GetValue("CurrentDay" .. save_id) >= 0 then
-                    current_day = Stats:GetValue("CurrentDay" .. save_id) or 0
-                    Stats:ClearValue("MeatEaten" .. save_id)
-                    Stats:ClearValue("CurrentDay" .. save_id)
-                    Stats:Save()
-                end
-
-                local num = current_day + 1
-
-                local days_check = 30
-
-                Stats:SetValue("DaysWithoutMeat" .. save_id, num)
-                Stats:Save()
-
-                if debugging then
-                    print(save_id)
-                    print("Days without meat: " .. num)
-                end
-
-                if num == days_check then
-                    GLOBAL.GetWorld().components.feattrigger:Trigger("Vegetarian")
-                end
-
-                new_day = false
-
-            end
-
-        end, GLOBAL.GetWorld())
+        TrackDays(inst, "DaysWithoutMeat", 30, "Vegetarian")
 
     end
 
@@ -1253,49 +1273,18 @@ end)
 ------------------------------------------------------------
 
 -- Keep track of days in adventure mode.
+local function AdventureQualifier(inst)
+    local mode = GLOBAL.SaveGameIndex:GetCurrentMode(save_slot)
+    if mode == "adventure" then
+        -- Proceed as usual.
+    elseif num then 
+        num = 0
+    end
+end
+
 AddPrefabPostInitAny(function(inst)
     if inst and inst:HasTag("player") then
-
-        local new_day = false
-
-        -- Make sure the day trigger only comes after a night.
-        inst:ListenForEvent("nighttime", function(inst, data)
-
-            new_day = true
-
-        end, GLOBAL.GetWorld())
-
-        inst:ListenForEvent("daytime", function(inst, data)
-
-            Stats:Load()
-
-            local save_slot = GLOBAL.SaveGameIndex:GetCurrentSaveSlot()
-            local save_id = GLOBAL.SaveGameIndex:GetSaveID(save_slot)
-            local mode = GLOBAL.SaveGameIndex:GetCurrentMode(save_slot)
-
-            if new_day then
-
-                local current_day = Stats:GetValue("AdventureDays" .. save_id) or 0
-                local num = current_day + 1
-
-                if mode == "adventure" then
-                    -- Proceed as usually.
-                else 
-                    num = 0
-                end
-
-                Stats:SetValue("AdventureDays" .. save_id, num)
-                Stats:Save()
-
-                if debugging then
-                    print(save_id)
-                    print("Days in adventure mode: " .. num)
-                end
-
-                new_day = false
-
-            end
-        end, GLOBAL.GetWorld())
+        TrackDays(inst, "AdventureDays", 60, "AdventureFast", true, AdventureQualifier)
     end
 end)
 
