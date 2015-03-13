@@ -1116,9 +1116,6 @@ AddPrefabPostInit("treasurechest", TrappedChestChecker)
 
 -- Cross-mod functionality.
 
-local realmodnames = {}
-local fancymodnames = {}
-
 local mods_to_load = GLOBAL.KnownModIndex:GetModsToLoad()
 for i,modname in pairs(mods_to_load) do
     local fancyname = GLOBAL.KnownModIndex:GetModFancyName(modname)
@@ -1126,9 +1123,6 @@ for i,modname in pairs(mods_to_load) do
     if debugging then
         print("Detected enabled mod: " .. fancyname)
     end
-
-    table.insert(realmodnames, modname)
-    table.insert(fancymodnames, fancyname)
 
     local modfeats = GLOBAL.kleiloadlua("../mods/"..modname.."/modfeats.lua")
 
