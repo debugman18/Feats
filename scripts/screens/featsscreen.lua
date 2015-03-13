@@ -24,9 +24,8 @@ local PopupDialogScreen = require "screens/popupdialog"
 local BigPopupDialogScreen = require "screens/bigpopupdialog"
 local MainScreen = require "screens/mainscreen"
 
--- Number of feats per page.
-local display_rows = 5
-local neat_mult = 4
+local display_rows = 5 -- Number of tiles per page.
+local neat_mult = 9 -- Number of pages, minus 1, because math.
 local to_beginning = neat_mult * display_rows
 local to_end = -to_beginning
 
@@ -46,6 +45,65 @@ local FeatsScreen = Class(Screen, function(self, profile)
 
     self.featnames = modenv:GetFeatNames()
     self.feats = modenv:GetFeats()
+
+    -- Return the env of a named mod. Thanks @squeek
+    local function GetMod(name_or_id)
+        for _,mod in ipairs(ModManager.mods) do
+            if mod.modinfo.id == name_or_id or mod.modinfo.name == name_or_id then
+                return mod
+            end
+        end
+        return nil
+    end
+    
+    -- Return whether a mod is enabled or not. Thanks @squeek
+    local function IsModEnabled(name_or_id)
+        return GetMod(name_or_id) ~= nil
+    end
+
+    -- Check that a feat's designated mod is enabled.
+    -- If it is not enabled, don't show the related feats.
+    local function CheckMods(table1, table2)
+        local mod = nil
+        local feat_key = nil
+        local feat_name = nil
+
+        for k,v in pairs(table2) do
+            if v[7] then
+                mod = v[7]
+                print(mod)
+                feat_key = k
+                print(feat_key)
+                feat_name = v[1]
+                print(feat_name)
+            end
+            if mod then
+                if not IsModEnabled(mod) then
+                    for feat,properties in pairs(self.feats) do
+                        if feat == feat_key then
+                            properties[3] = true
+                            properties[4] = true
+                        end
+                    end
+                end
+            end
+        end
+
+        if mod then
+            if not IsModEnabled(mod) then
+                for k,v in pairs(table1) do
+                    if v == feat_name then
+                        table.remove(self.featnames, k)
+                    end
+                end
+            end
+        end
+    end
+
+    if debugging then
+        print("Checking for enabled mods.")
+    end
+    CheckMods(self.featnames, self.feats)
 
     -------------------------------------------------------------------
 
@@ -275,6 +333,7 @@ function FeatsScreen:MakeFeatTile(keyname)
 	local hidden = keyname[4]
 	local score = keyname[5]
     local hint = keyname[6]
+    local modname = keyname[7] or "Vanilla"
 
 	if debugging then
 		print("------------------------------")
@@ -285,6 +344,7 @@ function FeatsScreen:MakeFeatTile(keyname)
 		print(hidden)
 		print(score)
         print(hint)
+        print(tostring(modname))
 	end
 
     ------------------------------

@@ -28,28 +28,6 @@ local large_score = 50
 local huge_score = 100
 
 ----------------------------------------------------------------------------
-
--- Mod tracking.
-
-local realmodnames = {}
-local fancymodnames = {}
-
-local mods_to_load = GLOBAL.KnownModIndex:GetModsToLoad()
-for i,modname in pairs(mods_to_load) do
-    local fancyname = GLOBAL.KnownModIndex:GetModFancyName(modname)
-    if modname.modfeats then
-        print("Mod feats files is: " .. tostring(modname.modfeats))
-    end
-    print(fancyname)
-    table.insert(realmodnames, modname)
-    table.insert(fancymodnames, fancyname)
-end
-
-GetMods = function(inst)
-
-end
-
-----------------------------------------------------------------------------
  
 -- Wide save/load functionality.
 
@@ -235,7 +213,7 @@ end
 
 -- Refresh the description, name, score, and hint of a feat.
 -- 1, 2, 5, 6, 7
-RefreshFeat = function(keyname, name, description, score, hint, epilogue)
+RefreshFeat = function(keyname, name, description, score, hint, mod)
 
     Feats:Load()
 
@@ -278,6 +256,14 @@ RefreshFeat = function(keyname, name, description, score, hint, epilogue)
             if debugging then
                 print(hint)
                 print(Feats:GetValue(keyname)[6])
+            end
+        end
+
+        if propertykey == 8 then
+            feat_cached[8] = mod
+            if debugging then
+                print(mod)
+                print(Feats:GetValue(keyname)[8])
             end
         end
 
@@ -371,7 +357,11 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint, mod)
     if not feat_exists then
         if debugging then
             print("------------------------------")
-            print("Adding feat:")
+            if mod then
+                print("Adding external feat:")
+            else
+                print("Adding feat:")
+            end
             print("Key: " .. keyname)
             print("Name: " .. name)
             print("Description: " .. description)
@@ -388,9 +378,13 @@ AddFeat = function(keyname, name, description, locked, hidden, score, hint, mod)
     else
         if debugging then
             print("------------------------------")
-            print("Feat " .. "\"" .. name .. "\"" .. " already exists. Refreshing...")
+            if mod then
+                print("External Feat " .. "\"" .. name .. "\"" .. " already exists. Refreshing...")
+            else
+                print("Feat " .. "\"" .. name .. "\"" .. " already exists. Refreshing...")
+            end
         end
-        RefreshFeat(keyname, name, description, score, hint)
+        RefreshFeat(keyname, name, description, score, hint, mod)
         Feats:Save()
     end
 end
@@ -1120,6 +1114,41 @@ AddPrefabPostInit("treasurechest", TrappedChestChecker)
 
 ------------------------------------------------------------
 
+-- Cross-mod functionality.
+
+local realmodnames = {}
+local fancymodnames = {}
+
+local mods_to_load = GLOBAL.KnownModIndex:GetModsToLoad()
+for i,modname in pairs(mods_to_load) do
+    local fancyname = GLOBAL.KnownModIndex:GetModFancyName(modname)
+
+    if debugging then
+        print("Detected enabled mod: " .. fancyname)
+    end
+
+    table.insert(realmodnames, modname)
+    table.insert(fancymodnames, fancyname)
+
+    local modfeats = GLOBAL.kleiloadlua("../mods/"..modname.."/modfeats.lua")
+
+    if modfeats then
+        if debugging then
+            print("Adding external feats.")
+        end
+
+        local imported_feats = modfeats()
+
+        for i,feat in pairs(imported_feats) do
+            local keyname = feat[1]
+            print(keyname)
+            AddFeat(feat[1], feat[2], feat[3], feat[4], feat[5], feat[6], feat[7], feat[8])
+        end
+    end
+end
+
+----------------------------------------------------------------------------
+
 -- Propegate some dummy feats so things look nicer.
 PropegateDummyFeats = function()
 
@@ -1140,7 +1169,7 @@ PropegateDummyFeats = function()
 
     local feat_count = #GetFeatNames()
 
-    local max_feat_count = 25
+    local max_feat_count = 50
 
     local rounding_factor = 5
 
